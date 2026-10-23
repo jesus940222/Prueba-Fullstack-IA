@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+coverage.xml
+.venv/
+__pycache__/
+.pytest_cache/
+htmlcov/
+.env
+playwright-report/
+test-results/
+*.pyc
+.coverage

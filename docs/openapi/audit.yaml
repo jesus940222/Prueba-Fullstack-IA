@@ -1,0 +1,525 @@
+openapi: 3.1.0
+info:
+  title: Auditoría
+  version: 1.0.0
+  description: API de solo lectura /api/v1/audit. No hay escrituras HTTP públicas.
+servers:
+- url: /
+paths:
+  /api/v1/audit/events:
+    get:
+      operationId: listEvents
+      tags:
+      - audit
+      summary: Busca eventos
+      description: La consulta genera su evento sin volver a la cola.
+      x-authorization:
+        kind: permission
+        permission: audit:read:any
+      responses:
+        '200':
+          description: Busca eventos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Inicio UTC. El rango máximo es 31 días.
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Fin UTC.
+      - name: actorId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+        description: Actor.
+      - name: sourceService
+        in: query
+        required: false
+        schema:
+          enum:
+          - access
+          - accounts
+          - catalog
+          - audit
+          - ai
+        description: Servicio.
+      - name: eventType
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+        description: Tipo conocido.
+      - name: resourceType
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+        description: Recurso.
+      - name: outcome
+        in: query
+        required: false
+        schema:
+          enum:
+          - success
+          - failure
+          - denied
+        description: Resultado.
+  /api/v1/audit/events/{id}:
+    get:
+      operationId: getEvent
+      tags:
+      - audit
+      summary: Detalle de evento
+      description: Sin secretos ni prompts.
+      x-authorization:
+        kind: permission
+        permission: audit:read:any
+      responses:
+        '200':
+          description: Detalle de evento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/audit/me/events:
+    get:
+      operationId: listMyEvents
+      tags:
+      - audit
+      summary: Eventos propios
+      description: Ningún rol inicial tiene audit:read:own.
+      x-authorization:
+        kind: permission
+        permission: audit:read:own
+      responses:
+        '200':
+          description: Eventos propios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Inicio UTC. El rango máximo es 31 días.
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Fin UTC.
+      - name: actorId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+        description: Actor.
+      - name: sourceService
+        in: query
+        required: false
+        schema:
+          enum:
+          - access
+          - accounts
+          - catalog
+          - audit
+          - ai
+        description: Servicio.
+      - name: eventType
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+        description: Tipo conocido.
+      - name: resourceType
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+        description: Recurso.
+      - name: outcome
+        in: query
+        required: false
+        schema:
+          enum:
+          - success
+          - failure
+          - denied
+        description: Resultado.
+  /api/v1/audit/correlations/{id}/events:
+    get:
+      operationId: listCorrelationEvents
+      tags:
+      - audit
+      summary: Eventos de una correlación
+      description: Mismo permiso global.
+      x-authorization:
+        kind: permission
+        permission: audit:read:any
+      responses:
+        '200':
+          description: Eventos de una correlación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: portal_session
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - correlationId
+      properties:
+        code:
+          type: string
+          enum:
+          - SESSION_INVALID
+          - PERMISSION_DENIED
+          - RESOURCE_NOT_VISIBLE
+          - CONFLICT
+          - IDEMPOTENCY_CONFLICT
+          - VALIDATION_ERROR
+          - BUSINESS_RULE
+          - RATE_LIMITED
+          - DEPENDENCY_UNAVAILABLE
+          - CSRF_INVALID
+          - RECENT_VERIFICATION_REQUIRED
+          - RECOVERY_POLICY_DISABLED
+          - CHALLENGE_INVALID
+        message:
+          type: string
+          maxLength: 300
+        correlationId:
+          type: string
+          format: uuid
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - code
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+    AuditEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - eventId
+      - eventType
+      - occurredAt
+      - outcome
+      - correlationId
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        schemaVersion:
+          type: integer
+        occurredAt:
+          type: string
+          format: date-time
+        receivedAt:
+          type: string
+          format: date-time
+        sourceService:
+          type: string
+        actorType:
+          enum:
+          - user
+          - service
+          - system
+        actorId:
+          type: string
+          format: uuid
+        customerId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        action:
+          type: string
+        outcome:
+          enum:
+          - success
+          - failure
+          - denied
+        reasonCode:
+          type:
+          - string
+          - 'null'
+        channel:
+          enum:
+          - web
+          - service
+          - system
+        correlationId:
+          type: string
+          format: uuid
+    AuditPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+  responses:
+    Unauthorized:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

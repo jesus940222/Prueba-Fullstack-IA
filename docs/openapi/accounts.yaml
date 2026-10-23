@@ -1,0 +1,1509 @@
+openapi: 3.1.0
+info:
+  title: Cuentas
+  version: 1.0.0
+  description: API /api/v1/accounts. La confirmación no acepta un importe distinto
+    ni una decisión del modelo.
+servers:
+- url: /
+paths:
+  /api/v1/accounts/summary:
+    get:
+      operationId: getSummary
+      tags:
+      - accounts
+      summary: Resumen propio
+      description: El gasto comercial no incluye toda transferencia.
+      x-authorization:
+        kind: permission
+        permission: accounts:read:own
+      responses:
+        '200':
+          description: Resumen propio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+  /api/v1/accounts/accounts:
+    get:
+      operationId: listAccounts
+      tags:
+      - accounts
+      summary: Lista cuentas propias
+      description: Solo cuentas del cliente vinculado.
+      x-authorization:
+        kind: permission
+        permission: accounts:read:own
+      responses:
+        '200':
+          description: Lista cuentas propias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/accounts/accounts/{id}:
+    get:
+      operationId: getAccount
+      tags:
+      - accounts
+      summary: Detalle de cuenta propia
+      description: La ajena responde 404.
+      x-authorization:
+        kind: permission
+        permission: accounts:read:own
+      responses:
+        '200':
+          description: Detalle de cuenta propia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/accounts/accounts/{id}/movements:
+    get:
+      operationId: listMovements
+      tags:
+      - accounts
+      summary: Movimientos
+      description: No se editan desde esta ruta.
+      x-authorization:
+        kind: permission
+        permission: transactions:read:own
+      responses:
+        '200':
+          description: Movimientos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovementPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: direction
+        in: query
+        required: false
+        schema:
+          enum:
+          - in
+          - out
+        description: Dirección.
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Inicio UTC.
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Fin UTC.
+  /api/v1/accounts/transfers:
+    get:
+      operationId: listTransfers
+      tags:
+      - transfers
+      summary: Transferencias propias
+      description: Paginada.
+      x-authorization:
+        kind: permission
+        permission: transfers:read:own
+      responses:
+        '200':
+          description: Transferencias propias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/accounts/transfers/{id}:
+    get:
+      operationId: getTransfer
+      tags:
+      - transfers
+      summary: Detalle de transferencia
+      description: Solo las propias.
+      x-authorization:
+        kind: permission
+        permission: transfers:read:own
+      responses:
+        '200':
+          description: Detalle de transferencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/accounts/transfers/{id}/receipt:
+    get:
+      operationId: getReceipt
+      tags:
+      - transfers
+      summary: Comprobante
+      description: Solo si está confirmada. Usa datos inmutables.
+      x-authorization:
+        kind: permission
+        permission: transfers:read:own
+      responses:
+        '200':
+          description: Comprobante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipt'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/accounts/beneficiaries:
+    get:
+      operationId: listBeneficiaries
+      tags:
+      - beneficiaries
+      summary: Beneficiarios propios
+      description: Cursor y búsqueda. No lista clientes.
+      x-authorization:
+        kind: permission
+        permission: beneficiaries:read:own
+      responses:
+        '200':
+          description: Beneficiarios propios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeneficiaryCursor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+        description: Máximo 50.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 512
+        description: 'Opaco, ligado a filtros. Inválido: 422.'
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+        description: Búsqueda acotada del propio recurso.
+    post:
+      operationId: createBeneficiary
+      tags:
+      - beneficiaries
+      summary: Guarda beneficiario
+      description: Operación separada de la transferencia.
+      x-authorization:
+        kind: permission
+        permission: beneficiaries:create:own
+      responses:
+        '201':
+          description: Guarda beneficiario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Beneficiary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeneficiaryCreate'
+  /api/v1/accounts/beneficiaries/{id}:
+    patch:
+      operationId: renameBeneficiary
+      tags:
+      - beneficiaries
+      summary: Cambia el alias
+      description: Solo alias.
+      x-authorization:
+        kind: permission
+        permission: beneficiaries:update:own
+      responses:
+        '200':
+          description: Cambia el alias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Beneficiary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeneficiaryUpdate'
+    delete:
+      operationId: deleteBeneficiary
+      tags:
+      - beneficiaries
+      summary: Borra beneficiario
+      description: No altera históricos.
+      x-authorization:
+        kind: permission
+        permission: beneficiaries:delete:own
+      responses:
+        '204':
+          description: Borra beneficiario
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/accounts/recipients/resolve:
+    post:
+      operationId: resolveRecipient
+      tags:
+      - transfers
+      summary: Resuelve destinatario
+      description: Datos mínimos y rate limit. No abre un directorio.
+      x-authorization:
+        kind: permission
+        permission: transfers:create:own
+      responses:
+        '200':
+          description: Resuelve destinatario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolvedRecipient'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveRecipient'
+  /api/v1/accounts/transfer-proposals:
+    post:
+      operationId: createProposal
+      tags:
+      - transfers
+      summary: Prepara una transferencia
+      description: No reserva fondos. beneficiaryId o número, nunca ambos.
+      x-authorization:
+        kind: permission
+        permission: transfers:create:own
+      responses:
+        '201':
+          description: Prepara una transferencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proposal'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalCreate'
+  /api/v1/accounts/transfer-proposals/{id}:
+    get:
+      operationId: getProposal
+      tags:
+      - transfers
+      summary: Lee la propuesta propia
+      description: Limitada a su usuario y sesión.
+      x-authorization:
+        kind: permission
+        permission: transfers:create:own
+      responses:
+        '200':
+          description: Lee la propuesta propia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proposal'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: cancelProposal
+      tags:
+      - transfers
+      summary: Cancela una propuesta pendiente
+      description: No cancela una transferencia confirmada.
+      x-authorization:
+        kind: permission
+        permission: transfers:create:own
+      responses:
+        '204':
+          description: Cancela una propuesta pendiente
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/accounts/transfer-proposals/{id}/confirm:
+    post:
+      operationId: confirmProposal
+      tags:
+      - transfers
+      summary: Confirma la propuesta
+      description: Idempotency-Key obligatoria. No acepta cambios de importe. Authorize
+        se repite antes del débito.
+      x-authorization:
+        kind: permission
+        permission: transfers:create:own
+        recentVerification: true
+      responses:
+        '200':
+          description: Confirma la propuesta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 16
+          maxLength: 200
+        description: Misma clave y mismo hash devuelven la operación. Otro hash responde
+          409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/accounts/me/transfer-limits:
+    get:
+      operationId: getLimits
+      tags:
+      - limits
+      summary: Lee límites
+      description: MXN.
+      x-authorization:
+        kind: permission
+        permission: transfer-limits:read:own
+      responses:
+        '200':
+          description: Lee límites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferLimits'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+    patch:
+      operationId: updateLimits
+      tags:
+      - limits
+      summary: Actualiza límites
+      description: Dentro del techo. La operación no supera el diario.
+      x-authorization:
+        kind: permission
+        permission: transfer-limits:update:own
+        recentVerification: true
+      responses:
+        '200':
+          description: Actualiza límites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferLimits'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferLimitsUpdate'
+  /internal/v1/accounts/eligibility-context:
+    post:
+      operationId: eligibilityContext
+      tags:
+      - internal
+      summary: Contexto mínimo de elegibilidad
+      description: Si no es verificable, verifiable=false. No concede la oferta.
+      x-authorization:
+        kind: service
+        audience: accounts.eligibility
+      responses:
+        '200':
+          description: Contexto mínimo de elegibilidad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibilityContext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - serviceCredential: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EligibilityRequest'
+  /internal/v1/accounts/customer-link:
+    post:
+      operationId: customerLink
+      tags:
+      - internal
+      summary: Cliente del usuario
+      description: Resuelve el usuario de la sesión al cliente dueño. No comparte la base. Sin vínculo activo, customerId es null.
+      x-authorization:
+        kind: service
+        audience: accounts.eligibility
+      responses:
+        '200':
+          description: Vínculo de cliente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerLink'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - serviceCredential: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerLinkRequest'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: portal_session
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+    serviceCredential:
+      type: http
+      scheme: bearer
+      bearerFormat: service-jwt
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - correlationId
+      properties:
+        code:
+          type: string
+          enum:
+          - SESSION_INVALID
+          - PERMISSION_DENIED
+          - RESOURCE_NOT_VISIBLE
+          - CONFLICT
+          - IDEMPOTENCY_CONFLICT
+          - VALIDATION_ERROR
+          - BUSINESS_RULE
+          - RATE_LIMITED
+          - DEPENDENCY_UNAVAILABLE
+          - CSRF_INVALID
+          - RECENT_VERIFICATION_REQUIRED
+          - RECOVERY_POLICY_DISABLED
+          - CHALLENGE_INVALID
+        message:
+          type: string
+          maxLength: 300
+        correlationId:
+          type: string
+          format: uuid
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - code
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+    Empty:
+      type: object
+      additionalProperties: false
+      required: []
+      properties: {}
+    Summary:
+      type: object
+      additionalProperties: false
+      required:
+      - totalBalance
+      - currency
+      properties:
+        totalBalance:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        currency:
+          const: MXN
+        spendTotal:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        recentMovements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movement'
+    Account:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - accountNumber
+      - name
+      - currency
+      - status
+      - balance
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountNumber:
+          type: string
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        currency:
+          const: MXN
+        status:
+          enum:
+          - active
+          - closed
+        balance:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+    AccountPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    Movement:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - direction
+      - amount
+      - currency
+      - recordedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        direction:
+          enum:
+          - in
+          - out
+        amount:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        currency:
+          const: MXN
+        balanceAfter:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        recordedAt:
+          type: string
+          format: date-time
+        transferId:
+          type: string
+          format: uuid
+    MovementPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movement'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    Transfer:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - reference
+      - status
+      - amount
+      - currency
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        proposalId:
+          type: string
+          format: uuid
+        status:
+          enum:
+          - completed
+          - rejected
+        amount:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        currency:
+          const: MXN
+        concept:
+          type: string
+        completedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    TransferPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transfer'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    Receipt:
+      type: object
+      additionalProperties: false
+      required:
+      - transferId
+      - reference
+      - amount
+      - currency
+      - concept
+      - completedAt
+      properties:
+        transferId:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        sourceAccountId:
+          type: string
+          format: uuid
+        destinationAccountId:
+          type: string
+          format: uuid
+        destinationLabel:
+          type: string
+        amount:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        currency:
+          const: MXN
+        concept:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+    Beneficiary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - alias
+      - destinationAccountId
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        alias:
+          type: string
+          minLength: 1
+          maxLength: 80
+        destinationAccountId:
+          type: string
+          format: uuid
+        status:
+          enum:
+          - active
+          - deleted
+    BeneficiaryCursor:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      - hasMore
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Beneficiary'
+        nextCursor:
+          type:
+          - string
+          - 'null'
+        hasMore:
+          type: boolean
+    BeneficiaryCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - destinationAccountId
+      - alias
+      properties:
+        destinationAccountId:
+          type: string
+          format: uuid
+        alias:
+          type: string
+          minLength: 1
+          maxLength: 80
+    BeneficiaryUpdate:
+      type: object
+      additionalProperties: false
+      required:
+      - alias
+      properties:
+        alias:
+          type: string
+          minLength: 1
+          maxLength: 80
+    ResolveRecipient:
+      type: object
+      additionalProperties: false
+      required:
+      - destinationAccountNumber
+      properties:
+        destinationAccountNumber:
+          type: string
+          pattern: ^[0-9]{10,18}$
+    ResolvedRecipient:
+      type: object
+      additionalProperties: false
+      required:
+      - destinationAccountId
+      - accountNumberMasked
+      properties:
+        destinationAccountId:
+          type: string
+          format: uuid
+        accountNumberMasked:
+          type: string
+        holderLabel:
+          type: string
+          maxLength: 40
+    ProposalCreate:
+      description: Exactamente uno de beneficiaryId o destinationAccountNumber.
+      type: object
+      additionalProperties: false
+      properties:
+        sourceAccountId:
+          type: string
+          format: uuid
+        beneficiaryId:
+          type: string
+          format: uuid
+        destinationAccountNumber:
+          type: string
+          pattern: ^[0-9]{10,18}$
+        amount:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        currency:
+          const: MXN
+        concept:
+          type: string
+          minLength: 1
+          maxLength: 140
+      oneOf:
+      - required:
+        - sourceAccountId
+        - beneficiaryId
+        - amount
+        - currency
+        - concept
+      - required:
+        - sourceAccountId
+        - destinationAccountNumber
+        - amount
+        - currency
+        - concept
+    Proposal:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - amount
+      - currency
+      - expiresAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          enum:
+          - pending
+          - confirmed
+          - cancelled
+          - rejected
+          - expired
+        sourceAccountId:
+          type: string
+          format: uuid
+        destinationAccountId:
+          type: string
+          format: uuid
+        destinationLabel:
+          type: string
+        amount:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        currency:
+          const: MXN
+        concept:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    TransferLimits:
+      type: object
+      additionalProperties: false
+      required:
+      - currency
+      - perTransferLimit
+      - dailyLimit
+      properties:
+        currency:
+          const: MXN
+        perTransferLimit:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        dailyLimit:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        perTransferMax:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        dailyMax:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+    TransferLimitsUpdate:
+      type: object
+      additionalProperties: false
+      required:
+      - perTransferLimit
+      - dailyLimit
+      properties:
+        perTransferLimit:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+        dailyLimit:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+    EligibilityRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - customerId
+      - fields
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        fields:
+          type: array
+          items:
+            enum:
+            - totalBalance
+            - accountAgeDays
+    EligibilityContext:
+      type: object
+      additionalProperties: false
+      required:
+      - customerId
+      - verifiable
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        verifiable:
+          type: boolean
+        attributes:
+          type: object
+          additionalProperties: false
+          properties:
+            totalBalance:
+              type: string
+              pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+            accountAgeDays:
+              type: integer
+              minimum: 0
+    CustomerLinkRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      properties:
+        userId:
+          type: string
+          format: uuid
+    CustomerLink:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - customerId
+      properties:
+        userId:
+          type: string
+          format: uuid
+        customerId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+  responses:
+    Unauthorized:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

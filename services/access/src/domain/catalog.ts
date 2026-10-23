@@ -1,0 +1,254 @@
+export interface PermissionDefinition {
+  code: string;
+  resource: string;
+  action: string;
+  scope: string;
+}
+
+export interface RoleDefinition {
+  code: string;
+  system: true;
+  immutable: true;
+  assignableByAccessAdmin: boolean;
+  permissions: readonly string[];
+}
+
+export const PERMISSIONS: readonly PermissionDefinition[] = [
+  { code: "profile:read:own", resource: "profile", action: "read", scope: "own" },
+  { code: "profile:update:own", resource: "profile", action: "update", scope: "own" },
+  { code: "security:manage:own", resource: "security", action: "manage", scope: "own" },
+  { code: "sessions:read:own", resource: "sessions", action: "read", scope: "own" },
+  { code: "sessions:revoke:own", resource: "sessions", action: "revoke", scope: "own" },
+  { code: "ai:chat:use", resource: "ai-chat", action: "use", scope: "own" },
+  { code: "ai:metrics:read:own", resource: "ai-metrics", action: "read", scope: "own" },
+  { code: "accounts:read:own", resource: "accounts", action: "read", scope: "own" },
+  { code: "transactions:read:own", resource: "transactions", action: "read", scope: "own" },
+  { code: "transfers:read:own", resource: "transfers", action: "read", scope: "own" },
+  { code: "transfers:create:own", resource: "transfers", action: "create", scope: "own" },
+  { code: "beneficiaries:read:own", resource: "beneficiaries", action: "read", scope: "own" },
+  { code: "beneficiaries:create:own", resource: "beneficiaries", action: "create", scope: "own" },
+  { code: "beneficiaries:update:own", resource: "beneficiaries", action: "update", scope: "own" },
+  { code: "beneficiaries:delete:own", resource: "beneficiaries", action: "delete", scope: "own" },
+  { code: "transfer-limits:read:own", resource: "transfer-limits", action: "read", scope: "own" },
+  { code: "transfer-limits:update:own", resource: "transfer-limits", action: "update", scope: "own" },
+  { code: "products:read", resource: "products", action: "read", scope: "active" },
+  { code: "offers:read:own", resource: "offers", action: "read", scope: "own" },
+  { code: "users:read", resource: "users", action: "read", scope: "limited" },
+  { code: "users:create", resource: "users", action: "create", scope: "any" },
+  { code: "users:update", resource: "users", action: "update", scope: "any" },
+  { code: "users:delete", resource: "users", action: "delete", scope: "any" },
+  { code: "users:restore", resource: "users", action: "restore", scope: "any" },
+  { code: "users:read:deleted", resource: "users", action: "read", scope: "deleted" },
+  { code: "sessions:revoke:any", resource: "sessions", action: "revoke", scope: "any" },
+  { code: "security:passkeys:configure", resource: "security", action: "configure", scope: "any" },
+  { code: "security:recovery:initiate", resource: "security", action: "initiate", scope: "recovery" },
+  { code: "security:recovery:complete", resource: "security", action: "complete", scope: "recovery" },
+  { code: "applications:read", resource: "applications", action: "read", scope: "any" },
+  { code: "applications:create", resource: "applications", action: "create", scope: "any" },
+  { code: "applications:update", resource: "applications", action: "update", scope: "any" },
+  { code: "applications:delete", resource: "applications", action: "delete", scope: "any" },
+  { code: "applications:restore", resource: "applications", action: "restore", scope: "any" },
+  { code: "applications:read:deleted", resource: "applications", action: "read", scope: "deleted" },
+  { code: "permissions:read", resource: "permissions", action: "read", scope: "any" },
+  { code: "roles:read", resource: "roles", action: "read", scope: "any" },
+  { code: "roles:create", resource: "roles", action: "create", scope: "any" },
+  { code: "roles:update", resource: "roles", action: "update", scope: "any" },
+  { code: "roles:delete", resource: "roles", action: "delete", scope: "any" },
+  { code: "roles:restore", resource: "roles", action: "restore", scope: "any" },
+  { code: "roles:read:deleted", resource: "roles", action: "read", scope: "deleted" },
+  { code: "roles:permissions:assign", resource: "roles", action: "assign", scope: "permissions" },
+  { code: "users:roles:read", resource: "role-assignments", action: "read", scope: "any" },
+  { code: "users:roles:assign", resource: "role-assignments", action: "assign", scope: "any" },
+  { code: "users:roles:revoke", resource: "role-assignments", action: "revoke", scope: "any" },
+  { code: "audit:read:any", resource: "audit", action: "read", scope: "any" },
+  { code: "audit:read:own", resource: "audit", action: "read", scope: "own" },
+  { code: "ai:metrics:read:any", resource: "ai-metrics", action: "read", scope: "any" },
+  { code: "ai:alerts:read", resource: "ai-alerts", action: "read", scope: "any" },
+  { code: "ai:alerts:acknowledge", resource: "ai-alerts", action: "acknowledge", scope: "any" },
+  { code: "ai:alerts:configure", resource: "ai-alerts", action: "configure", scope: "any" },
+  { code: "categories:read", resource: "categories", action: "read", scope: "admin" },
+  { code: "categories:create", resource: "categories", action: "create", scope: "admin" },
+  { code: "categories:update", resource: "categories", action: "update", scope: "admin" },
+  { code: "categories:delete", resource: "categories", action: "delete", scope: "admin" },
+  { code: "categories:restore", resource: "categories", action: "restore", scope: "admin" },
+  { code: "categories:read:deleted", resource: "categories", action: "read", scope: "deleted" },
+  { code: "products:manage:read", resource: "products", action: "read", scope: "admin" },
+  { code: "products:create", resource: "products", action: "create", scope: "admin" },
+  { code: "products:update", resource: "products", action: "update", scope: "admin" },
+  { code: "products:delete", resource: "products", action: "delete", scope: "admin" },
+  { code: "products:restore", resource: "products", action: "restore", scope: "admin" },
+  { code: "products:read:deleted", resource: "products", action: "read", scope: "deleted" },
+  { code: "offers:read", resource: "offers", action: "read", scope: "admin" },
+  { code: "offers:create", resource: "offers", action: "create", scope: "admin" },
+  { code: "offers:update", resource: "offers", action: "update", scope: "admin" },
+  { code: "offers:delete", resource: "offers", action: "delete", scope: "admin" },
+  { code: "offers:restore", resource: "offers", action: "restore", scope: "admin" },
+  { code: "offers:read:deleted", resource: "offers", action: "read", scope: "deleted" },
+  { code: "offers:rules:manage", resource: "offers", action: "manage", scope: "rules" },
+  { code: "offers:assignments:read", resource: "offers", action: "read", scope: "assignments" },
+  { code: "offers:assign", resource: "offers", action: "assign", scope: "assignments" },
+  { code: "offers:read:any", resource: "offers", action: "read", scope: "customer" },
+  { code: "ai:documents:read", resource: "ai-documents", action: "read", scope: "admin" },
+  { code: "ai:documents:reindex", resource: "ai-documents", action: "reindex", scope: "admin" },
+];
+
+const own = [
+  "profile:read:own",
+  "profile:update:own",
+  "security:manage:own",
+  "sessions:read:own",
+  "sessions:revoke:own",
+  "ai:chat:use",
+  "ai:metrics:read:own",
+] as const;
+
+const clientOwn = [
+  "accounts:read:own",
+  "transactions:read:own",
+  "transfers:read:own",
+  "transfers:create:own",
+  "beneficiaries:read:own",
+  "beneficiaries:create:own",
+  "beneficiaries:update:own",
+  "beneficiaries:delete:own",
+  "transfer-limits:read:own",
+  "transfer-limits:update:own",
+  "products:read",
+  "offers:read:own",
+] as const;
+
+export const ROLES: readonly RoleDefinition[] = [
+  { code: "cliente", system: true, immutable: true, assignableByAccessAdmin: true, permissions: [...own, ...clientOwn] },
+  { code: "soporte", system: true, immutable: true, assignableByAccessAdmin: true, permissions: [...own, "users:read", "security:recovery:initiate"] },
+  { code: "auditor", system: true, immutable: true, assignableByAccessAdmin: true, permissions: [...own, "audit:read:any"] },
+  {
+    code: "administrador",
+    system: true,
+    immutable: true,
+    assignableByAccessAdmin: true,
+    permissions: [
+      ...own,
+      "users:read",
+      "users:create",
+      "users:update",
+      "users:delete",
+      "users:restore",
+      "users:read:deleted",
+      "sessions:revoke:any",
+      "security:passkeys:configure",
+      "security:recovery:initiate",
+      "security:recovery:complete",
+      "applications:read",
+      "applications:create",
+      "applications:update",
+      "applications:delete",
+      "applications:restore",
+      "applications:read:deleted",
+      "permissions:read",
+      "roles:read",
+      "roles:create",
+      "roles:update",
+      "roles:delete",
+      "roles:restore",
+      "roles:read:deleted",
+      "roles:permissions:assign",
+      "users:roles:read",
+      "users:roles:assign",
+      "users:roles:revoke",
+      "ai:metrics:read:any",
+      "ai:alerts:read",
+      "ai:alerts:acknowledge",
+      "ai:alerts:configure",
+    ],
+  },
+  {
+    code: "gestor-catalogo",
+    system: true,
+    immutable: true,
+    assignableByAccessAdmin: false,
+    permissions: [
+      ...own,
+      "products:read",
+      "categories:read",
+      "categories:create",
+      "categories:update",
+      "categories:delete",
+      "categories:restore",
+      "categories:read:deleted",
+      "products:manage:read",
+      "products:create",
+      "products:update",
+      "products:delete",
+      "products:restore",
+      "products:read:deleted",
+      "offers:read",
+      "offers:create",
+      "offers:update",
+      "offers:delete",
+      "offers:restore",
+      "offers:read:deleted",
+      "offers:rules:manage",
+      "offers:assignments:read",
+      "offers:assign",
+      "ai:documents:read",
+      "ai:documents:reindex",
+    ],
+  },
+];
+
+export const UNASSIGNED_PERMISSIONS = ["audit:read:own", "offers:read:any"] as const;
+
+export const DELEGABLE_CUSTOM_ROLE_PERMISSIONS: readonly string[] = [
+  ...own,
+  ...clientOwn,
+  "users:read",
+  "security:recovery:initiate",
+  "audit:read:any",
+  "users:create",
+  "users:update",
+  "users:delete",
+  "users:restore",
+  "users:read:deleted",
+  "sessions:revoke:any",
+  "security:passkeys:configure",
+  "applications:read",
+  "applications:create",
+  "applications:update",
+  "applications:delete",
+  "applications:restore",
+  "applications:read:deleted",
+  "permissions:read",
+  "roles:read",
+  "roles:create",
+  "roles:update",
+  "roles:delete",
+  "roles:restore",
+  "roles:read:deleted",
+  "roles:permissions:assign",
+  "users:roles:read",
+  "users:roles:assign",
+  "users:roles:revoke",
+  "ai:metrics:read:any",
+  "ai:alerts:read",
+  "ai:alerts:acknowledge",
+  "ai:alerts:configure",
+];
+
+export const EFFECTIVE_ADMIN_PERMISSION = "users:roles:assign";
+
+export const PORTAL_APPLICATION_CODE = "portal";
+
+const permissionCodes = new Set(PERMISSIONS.map((item) => item.code));
+const delegable = new Set(DELEGABLE_CUSTOM_ROLE_PERMISSIONS);
+
+export function isKnownPermission(code: string): boolean {
+  return permissionCodes.has(code);
+}
+
+export function isDelegablePermission(code: string): boolean {
+  return delegable.has(code);
+}
+
+export function roleDefinition(code: string): RoleDefinition | undefined {
+  return ROLES.find((role) => role.code === code);
+}

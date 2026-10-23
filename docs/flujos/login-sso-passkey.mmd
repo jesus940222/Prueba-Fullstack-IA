@@ -1,0 +1,29 @@
+sequenceDiagram
+  participant Usuario
+  participant Web
+  participant Acceso
+  participant OIDC as ProveedorOIDC
+  participant Correo as Mailpit
+
+  Usuario->>Web: Password, Google o Microsoft
+  alt Password
+    Web->>Acceso: POST /auth/login
+    Acceso->>Acceso: Verifica hash y estado
+  else SSO
+    Web->>Acceso: GET /auth/oidc/{provider}/start
+    Acceso->>OIDC: Authorization code, PKCE, state y nonce
+    OIDC-->>Acceso: Callback
+    Acceso->>Acceso: Issuer, audience, firma y sujeto
+  end
+  alt Passkey pending
+    Acceso-->>Web: PASSKEY_ENROLLMENT_REQUIRED
+    Note over Acceso: No hay sesion funcional
+  else Passkey active
+    Acceso-->>Web: PASSKEY_CHALLENGE
+    Web->>Acceso: Verifica WebAuthn de un uso
+  else Passkey disabled
+    Acceso->>Correo: Codigo de un uso
+    Acceso-->>Web: EMAIL_CHALLENGE
+    Web->>Acceso: Verifica codigo
+  end
+  Acceso-->>Web: AUTHENTICATED en cookies HttpOnly

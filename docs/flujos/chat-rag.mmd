@@ -1,0 +1,24 @@
+sequenceDiagram
+  participant Usuario
+  participant Web
+  participant IA
+  participant Qdrant
+  participant Cuentas
+  participant OpenAI as OpenAI
+
+  Usuario->>Web: Mensaje
+  Web->>IA: POST /conversations/{id}/messages
+  IA->>IA: Presupuesto, sesion y permisos vigentes
+  IA->>Qdrant: search_documentation con filtros de audiencia
+  IA->>Cuentas: Lecturas autorizadas
+  IA->>OpenAI: Responses, solo funciones propias
+  alt Falta una transferencia
+    IA->>Cuentas: prepare_transfer
+    IA-->>Web: confirmation_required con la propuesta
+    Usuario->>Web: Boton de confirmacion
+    Web->>Cuentas: Confirmacion directa, no por el modelo
+    Cuentas-->>Web: Resultado verificado
+    Web->>IA: Estado verificado, sin nuevo debito
+  else Sin evidencia o sin permiso
+    IA-->>Web: Incertidumbre o rechazo
+  end

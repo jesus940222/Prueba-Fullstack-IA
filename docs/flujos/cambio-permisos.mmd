@@ -1,0 +1,19 @@
+sequenceDiagram
+  participant Admin
+  participant Acceso
+  participant Redis
+  participant Cuentas
+
+  Admin->>Acceso: Cambia rol, asignacion o permisos
+  Acceso->>Acceso: Transaccion, version y revocacion de sesiones
+  Acceso->>Redis: Abandona la clave de la version anterior
+  Acceso-->>Admin: Cambio confirmado
+  Note over Cuentas: Una autorizacion ya concedida no se deshace sola
+  Cuentas->>Acceso: Authorize inmediato antes de ejecutar
+  alt Revocacion ya confirmada
+    Acceso-->>Cuentas: Denegado
+    Cuentas-->>Cuentas: No hay debito
+  else Authorize no verificable
+    Acceso-->>Cuentas: 503
+    Cuentas-->>Cuentas: Fallo cerrado, sin debito
+  end

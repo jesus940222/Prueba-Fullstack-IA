@@ -1,0 +1,474 @@
+name: guia-portal
+
+x-platform: &platform
+  SERVICE_VERSION: ${SERVICE_VERSION}
+  TRANSFER_LIMIT_PER_OPERATION: ${TRANSFER_LIMIT_PER_OPERATION}
+  TRANSFER_LIMIT_DAILY: ${TRANSFER_LIMIT_DAILY}
+  TRANSFER_LIMIT_PER_OPERATION_MAX: ${TRANSFER_LIMIT_PER_OPERATION_MAX}
+  TRANSFER_LIMIT_DAILY_MAX: ${TRANSFER_LIMIT_DAILY_MAX}
+  TRANSFER_PROPOSAL_TTL: ${TRANSFER_PROPOSAL_TTL}
+  RECENT_VERIFICATION_TTL: ${RECENT_VERIFICATION_TTL}
+  ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL}
+  SESSION_ABSOLUTE_TTL: ${SESSION_ABSOLUTE_TTL}
+  SESSION_IDLE_TTL: ${SESSION_IDLE_TTL}
+  EMAIL_CODE_TTL: ${EMAIL_CODE_TTL}
+  EMAIL_CODE_MAX_ATTEMPTS: ${EMAIL_CODE_MAX_ATTEMPTS}
+  PAGE_SIZE_DEFAULT: ${PAGE_SIZE_DEFAULT}
+  PAGE_SIZE_MAX: ${PAGE_SIZE_MAX}
+  CURSOR_LIMIT_DEFAULT: ${CURSOR_LIMIT_DEFAULT}
+  CURSOR_LIMIT_MAX: ${CURSOR_LIMIT_MAX}
+  AI_BUDGET_RUN_USD: ${AI_BUDGET_RUN_USD}
+  AI_BUDGET_USER_DAY_USD: ${AI_BUDGET_USER_DAY_USD}
+  AI_BUDGET_GLOBAL_DAY_USD: ${AI_BUDGET_GLOBAL_DAY_USD}
+  AI_BUDGET_WARN_PERCENT: ${AI_BUDGET_WARN_PERCENT}
+  AI_ALERT_COOLDOWN: ${AI_ALERT_COOLDOWN}
+  AI_MAX_STEPS: ${AI_MAX_STEPS}
+  AI_RUN_TIMEOUT: ${AI_RUN_TIMEOUT}
+  QDRANT_VECTOR_SIZE: ${QDRANT_VECTOR_SIZE}
+
+x-access-environment: &access-environment
+  <<: *platform
+  SERVICE_NAME: access
+  PORT: "3001"
+  ACCESS_DATABASE_URL: ${ACCESS_DATABASE_URL}
+  ACCESS_REDIS_URL: ${ACCESS_REDIS_URL}
+  RABBITMQ_URL: ${RABBITMQ_ACCESS_URL}
+  SMTP_URL: ${SMTP_URL}
+  JWT_ISSUER: ${JWT_ISSUER}
+  JWT_AUDIENCE: ${JWT_AUDIENCE}
+  JWT_ACTIVE_KID: ${JWT_ACTIVE_KID}
+  JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
+  CSRF_SECRET: ${CSRF_SECRET}
+  OTP_HMAC_SECRET: ${OTP_HMAC_SECRET}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+  GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+  MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
+  MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET}
+  MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI}
+  MICROSOFT_ALLOWED_ISSUERS: ${MICROSOFT_ALLOWED_ISSUERS}
+  WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID}
+  WEBAUTHN_ORIGIN: ${WEBAUTHN_ORIGIN}
+  WEBAUTHN_RP_NAME: ${WEBAUTHN_RP_NAME}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+  PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-12}
+  RECOVERY_CODE_COUNT: ${RECOVERY_CODE_COUNT:-10}
+  PORTAL_PUBLIC_URL: http://localhost:8080
+  ACCESS_BOOTSTRAP_PASSWORD: ${ACCESS_BOOTSTRAP_PASSWORD:-}
+  ACCOUNTS_SERVICE_SECRET: ${ACCOUNTS_SERVICE_SECRET:-}
+  CATALOG_SERVICE_SECRET: ${CATALOG_SERVICE_SECRET:-}
+  AUDIT_SERVICE_SECRET: ${AUDIT_SERVICE_SECRET:-}
+  AI_SERVICE_SECRET: ${AI_SERVICE_SECRET:-}
+
+services:
+  postgres:
+    image: postgres:17.6
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  postgres-bootstrap:
+    image: postgres:17.6
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_SUPERUSER_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      ACCESS_DB_PASSWORD: ${ACCESS_DB_PASSWORD}
+      ACCOUNTS_DB_PASSWORD: ${ACCOUNTS_DB_PASSWORD}
+      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD}
+      AI_DB_PASSWORD: ${AI_DB_PASSWORD}
+    volumes:
+      - ./infra/postgres/bootstrap.sh:/bootstrap.sh:ro
+    entrypoint: ["bash", "/bootstrap.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  mongo:
+    image: mongo:8.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand({ ping: 1 }).ok\" | grep -q 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  mongo-bootstrap:
+    image: mongo:8.0
+    environment:
+      MONGO_ROOT_USER: ${MONGO_ROOT_USER}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      AUDIT_CONSUMER_PASSWORD: ${AUDIT_CONSUMER_PASSWORD}
+      AUDIT_API_PASSWORD: ${AUDIT_API_PASSWORD}
+      AUDIT_MIGRATOR_PASSWORD: ${AUDIT_MIGRATOR_PASSWORD}
+    volumes:
+      - ./infra/mongo/bootstrap.sh:/bootstrap.sh:ro
+      - ./infra/mongo/provision.js:/provision.js:ro
+    entrypoint: ["bash", "/bootstrap.sh"]
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: "no"
+
+  redis:
+    image: redis:8.2
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --maxmemory-policy noeviction"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.1-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_ADMIN_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_ADMIN_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  rabbitmq-bootstrap:
+    image: python:3.13.9-slim
+    environment:
+      RABBITMQ_ADMIN_USER: ${RABBITMQ_ADMIN_USER}
+      RABBITMQ_ADMIN_PASSWORD: ${RABBITMQ_ADMIN_PASSWORD}
+      RABBITMQ_ACCESS_USER: ${RABBITMQ_ACCESS_USER}
+      RABBITMQ_ACCESS_PASSWORD: ${RABBITMQ_ACCESS_PASSWORD}
+      RABBITMQ_ACCOUNTS_USER: ${RABBITMQ_ACCOUNTS_USER}
+      RABBITMQ_ACCOUNTS_PASSWORD: ${RABBITMQ_ACCOUNTS_PASSWORD}
+      RABBITMQ_CATALOG_USER: ${RABBITMQ_CATALOG_USER}
+      RABBITMQ_CATALOG_PASSWORD: ${RABBITMQ_CATALOG_PASSWORD}
+      RABBITMQ_AUDIT_USER: ${RABBITMQ_AUDIT_USER}
+      RABBITMQ_AUDIT_PASSWORD: ${RABBITMQ_AUDIT_PASSWORD}
+      RABBITMQ_AI_USER: ${RABBITMQ_AI_USER}
+      RABBITMQ_AI_PASSWORD: ${RABBITMQ_AI_PASSWORD}
+    volumes:
+      - ./infra/rabbitmq/bootstrap.py:/bootstrap.py:ro
+    command: ["python", "/bootstrap.py"]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: "no"
+
+  qdrant:
+    image: qdrant/qdrant:v1.19.2-unprivileged
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    profiles: ["dev"]
+    ports:
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+
+  access-migrate:
+    build:
+      context: .
+      dockerfile: services/access/Dockerfile
+    environment: *access-environment
+    command: ["node", "dist/infrastructure/persistence/migrate.js"]
+    depends_on:
+      postgres-bootstrap:
+        condition: service_completed_successfully
+    restart: "no"
+
+  access:
+    build:
+      context: .
+      dockerfile: services/access/Dockerfile
+    environment: *access-environment
+    depends_on:
+      access-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      rabbitmq-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  accounts-migrate:
+    build:
+      context: .
+      dockerfile: services/accounts/Dockerfile
+    environment:
+      <<: *platform
+      SERVICE_NAME: accounts
+      PORT: "3002"
+      ACCOUNTS_DATABASE_URL: ${ACCOUNTS_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_ACCOUNTS_URL}
+    command: ["node", "dist/infrastructure/persistence/migrate.js"]
+    depends_on:
+      postgres-bootstrap:
+        condition: service_completed_successfully
+    restart: "no"
+
+  accounts:
+    build:
+      context: .
+      dockerfile: services/accounts/Dockerfile
+    environment:
+      <<: *platform
+      SERVICE_NAME: accounts
+      PORT: "3002"
+      ACCOUNTS_DATABASE_URL: ${ACCOUNTS_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_ACCOUNTS_URL}
+      ACCOUNTS_SERVICE_SECRET: ${ACCOUNTS_SERVICE_SECRET:-}
+      CATALOG_SERVICE_SECRET: ${CATALOG_SERVICE_SECRET:-}
+      AI_SERVICE_SECRET: ${AI_SERVICE_SECRET:-}
+      ACCESS_AUTHORIZE_URL: http://access:3001
+      FINANCIAL_TIME_ZONE: ${FINANCIAL_TIME_ZONE:-America/Mexico_City}
+    depends_on:
+      accounts-migrate:
+        condition: service_completed_successfully
+      rabbitmq-bootstrap:
+        condition: service_completed_successfully
+      access:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3002/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  catalog-migrate:
+    build:
+      context: .
+      dockerfile: services/catalog/Dockerfile
+    environment:
+      <<: *platform
+      SERVICE_NAME: catalog
+      PORT: "3003"
+      CATALOG_DATABASE_URL: ${CATALOG_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_CATALOG_URL}
+    command: ["node", "dist/infrastructure/persistence/migrate.js"]
+    depends_on:
+      postgres-bootstrap:
+        condition: service_completed_successfully
+    restart: "no"
+
+  catalog:
+    build:
+      context: .
+      dockerfile: services/catalog/Dockerfile
+    environment:
+      <<: *platform
+      SERVICE_NAME: catalog
+      PORT: "3003"
+      CATALOG_DATABASE_URL: ${CATALOG_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_CATALOG_URL}
+      ACCESS_AUTHORIZE_URL: http://access:3001
+      ACCOUNTS_ELIGIBILITY_URL: http://accounts:3002
+      CATALOG_SERVICE_SECRET: ${CATALOG_SERVICE_SECRET:-}
+    depends_on:
+      catalog-migrate:
+        condition: service_completed_successfully
+      rabbitmq-bootstrap:
+        condition: service_completed_successfully
+      access:
+        condition: service_healthy
+      accounts:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3003/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  audit-migrate:
+    build:
+      context: .
+      dockerfile: services/audit/Dockerfile
+    environment:
+      <<: *platform
+      SERVICE_NAME: audit
+      PORT: "3004"
+      AUDIT_API_URL: ${AUDIT_API_URL}
+      AUDIT_MIGRATOR_URL: ${AUDIT_MIGRATOR_URL}
+      RABBITMQ_URL: ${RABBITMQ_AUDIT_URL}
+    command: ["node", "dist/infrastructure/persistence/provision.js"]
+    depends_on:
+      mongo-bootstrap:
+        condition: service_completed_successfully
+    restart: "no"
+
+  audit:
+    build:
+      context: .
+      dockerfile: services/audit/Dockerfile
+    environment:
+      <<: *platform
+      SERVICE_NAME: audit
+      PORT: "3004"
+      AUDIT_API_URL: ${AUDIT_API_URL}
+      AUDIT_MIGRATOR_URL: ${AUDIT_MIGRATOR_URL}
+      AUDIT_CONSUMER_URL: ${AUDIT_CONSUMER_URL}
+      RABBITMQ_URL: ${RABBITMQ_AUDIT_URL}
+      ACCESS_AUTHORIZE_URL: http://access:3001
+      AUDIT_SERVICE_SECRET: ${AUDIT_SERVICE_SECRET:-}
+      AUDIT_RANGE_MAX_DAYS: ${AUDIT_RANGE_MAX_DAYS:-31}
+      AUDIT_CONSUME_ATTEMPTS: ${AUDIT_CONSUME_ATTEMPTS:-3}
+    depends_on:
+      audit-migrate:
+        condition: service_completed_successfully
+      rabbitmq-bootstrap:
+        condition: service_completed_successfully
+      access:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3004/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  ai-migrate:
+    build:
+      context: .
+      dockerfile: services/ai/Dockerfile
+    environment:
+      <<: *platform
+      SERVICE_NAME: ai
+      PORT: "3005"
+      AI_DATABASE_URL: ${AI_DATABASE_URL}
+      QDRANT_URL: ${QDRANT_URL}
+      RABBITMQ_URL: ${RABBITMQ_AI_URL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_CONVERSATION_MODEL: ${OPENAI_CONVERSATION_MODEL}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL}
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+    command: ["python", "-m", "portal_ai.infrastructure.persistence.migrate"]
+    depends_on:
+      postgres-bootstrap:
+        condition: service_completed_successfully
+      qdrant:
+        condition: service_started
+    restart: "no"
+
+  ai:
+    build:
+      context: .
+      dockerfile: services/ai/Dockerfile
+    environment:
+      <<: *platform
+      SERVICE_NAME: ai
+      PORT: "3005"
+      AI_DATABASE_URL: ${AI_DATABASE_URL}
+      QDRANT_URL: ${QDRANT_URL}
+      RABBITMQ_URL: ${RABBITMQ_AI_URL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_CONVERSATION_MODEL: ${OPENAI_CONVERSATION_MODEL}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL}
+      OPENAI_PRICE_OBSERVED_ON: ${OPENAI_PRICE_OBSERVED_ON}
+      OPENAI_PRICE_INPUT_PER_MILLION: ${OPENAI_PRICE_INPUT_PER_MILLION}
+      OPENAI_PRICE_CACHED_INPUT_PER_MILLION: ${OPENAI_PRICE_CACHED_INPUT_PER_MILLION}
+      OPENAI_PRICE_CACHE_WRITE_PER_MILLION: ${OPENAI_PRICE_CACHE_WRITE_PER_MILLION}
+      OPENAI_PRICE_OUTPUT_PER_MILLION: ${OPENAI_PRICE_OUTPUT_PER_MILLION}
+      OPENAI_PRICE_EMBEDDING_PER_MILLION: ${OPENAI_PRICE_EMBEDDING_PER_MILLION}
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+      LANGSMITH_ENDPOINT: ${LANGSMITH_ENDPOINT}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT}
+      AI_SERVICE_SECRET: ${AI_SERVICE_SECRET}
+      ACCESS_AUTHORIZE_URL: http://access:3001
+      ACCOUNTS_BASE_URL: http://accounts:3002
+      CATALOG_BASE_URL: http://catalog:3003
+      SMTP_URL: ${SMTP_URL}
+      KNOWLEDGE_DIR: /app/knowledge
+      AI_MAX_TOTAL_TOKENS: ${AI_MAX_TOTAL_TOKENS:-8000}
+      AI_CHAT_RATE_LIMIT: ${AI_CHAT_RATE_LIMIT:-20}
+      AI_CHAT_RATE_WINDOW: ${AI_CHAT_RATE_WINDOW:-60}
+      AI_MAX_CONCURRENCY: ${AI_MAX_CONCURRENCY:-2}
+      AI_BUDGET_RESERVE_USD: ${AI_BUDGET_RESERVE_USD:-0.05}
+    depends_on:
+      ai-migrate:
+        condition: service_completed_successfully
+      rabbitmq-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3005/ready', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 180s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: infra/gateway/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      access:
+        condition: service_healthy
+      accounts:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      audit:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:
+  rabbitmq-data:
+  qdrant-data:

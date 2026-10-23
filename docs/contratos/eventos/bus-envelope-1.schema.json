@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portal.local/schemas/events/bus-envelope-1.schema.json",
+  "title": "Sobre de evento v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "source_service",
+    "actor_type",
+    "actor_id",
+    "correlation_id",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "format": "uuid"},
+    "event_type": {"$ref": "#/$defs/eventType"},
+    "schema_version": {"const": 1},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "source_service": {"enum": ["access", "accounts", "catalog", "ai"]},
+    "actor_type": {"enum": ["user", "service", "system"]},
+    "actor_id": {"type": "string", "format": "uuid"},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "causation_id": {"type": ["string", "null"], "format": "uuid"},
+    "payload": {"type": "object"}
+  },
+  "$defs": {
+    "eventType": {
+      "enum": [
+        "session.revoked",
+        "user.deleted",
+        "role.updated",
+        "role.assignment.changed",
+        "transfer.completed",
+        "transfer.rejected",
+        "transfer_limits.updated",
+        "beneficiary.changed",
+        "product.changed",
+        "offer.changed",
+        "ai.run.completed",
+        "ai.run.failed",
+        "ai.run.cancelled",
+        "ai.cost_alert.created",
+        "ai.cost_alert.acknowledged",
+        "notification.delivery.failed"
+      ]
+    },
+    "money": {"type": "string", "pattern": "^(0|[1-9][0-9]{0,15})\\.[0-9]{2}$"},
+    "uuid": {"type": "string", "format": "uuid"}
+  },
+  "allOf": [
+    {"if": {"properties": {"event_type": {"const": "session.revoked"}}}, "then": {"properties": {"source_service": {"const": "access"}, "payload": {"type": "object", "additionalProperties": false, "required": ["session_id", "user_id", "reason"], "properties": {"session_id": {"$ref": "#/$defs/uuid"}, "user_id": {"$ref": "#/$defs/uuid"}, "reason": {"type": "string", "maxLength": 80}}}}}},
+    {"if": {"properties": {"event_type": {"const": "user.deleted"}}}, "then": {"properties": {"source_service": {"const": "access"}, "payload": {"type": "object", "additionalProperties": false, "required": ["user_id"], "properties": {"user_id": {"$ref": "#/$defs/uuid"}}}}}},
+    {"if": {"properties": {"event_type": {"const": "role.updated"}}}, "then": {"properties": {"source_service": {"const": "access"}, "payload": {"type": "object", "additionalProperties": false, "required": ["role_id", "authorization_version"], "properties": {"role_id": {"$ref": "#/$defs/uuid"}, "authorization_version": {"type": "integer", "minimum": 1}}}}}},
+    {"if": {"properties": {"event_type": {"const": "role.assignment.changed"}}}, "then": {"properties": {"source_service": {"const": "access"}, "payload": {"type": "object", "additionalProperties": false, "required": ["user_id", "role_id", "assignment_id", "change"], "properties": {"user_id": {"$ref": "#/$defs/uuid"}, "role_id": {"$ref": "#/$defs/uuid"}, "assignment_id": {"$ref": "#/$defs/uuid"}, "change": {"enum": ["assigned", "revoked"]}}}}}},
+    {"if": {"properties": {"event_type": {"const": "transfer.completed"}}}, "then": {"properties": {"source_service": {"const": "accounts"}, "payload": {"type": "object", "additionalProperties": false, "required": ["transfer_id", "reference", "source_account_id", "destination_account_id", "amount", "currency"], "properties": {"transfer_id": {"$ref": "#/$defs/uuid"}, "reference": {"type": "string", "minLength": 1, "maxLength": 40}, "source_account_id": {"$ref": "#/$defs/uuid"}, "destination_account_id": {"$ref": "#/$defs/uuid"}, "amount": {"$ref": "#/$defs/money"}, "currency": {"const": "MXN"}}}}}},
+    {"if": {"properties": {"event_type": {"const": "transfer.rejected"}}}, "then": {"properties": {"source_service": {"const": "accounts"}, "payload": {"type": "object", "additionalProperties": false, "required": ["proposal_id", "reason_code"], "properties": {"proposal_id": {"$ref": "#/$defs/uuid"}, "reason_code": {"type": "string", "maxLength": 80}}}}}},
+    {"if": {"properties": {"event_type": {"const": "transfer_limits.updated"}}}, "then": {"properties": {"source_service": {"const": "accounts"}, "payload": {"type": "object", "additionalProperties": false, "required": ["user_id", "currency", "per_transfer_limit", "daily_limit"], "properties": {"user_id": {"$ref": "#/$defs/uuid"}, "currency": {"const": "MXN"}, "per_transfer_limit": {"$ref": "#/$defs/money"}, "daily_limit": {"$ref": "#/$defs/money"}}}}}},
+    {"if": {"properties": {"event_type": {"const": "beneficiary.changed"}}}, "then": {"properties": {"source_service": {"const": "accounts"}, "payload": {"type": "object", "additionalProperties": false, "required": ["beneficiary_id", "customer_id", "change"], "properties": {"beneficiary_id": {"$ref": "#/$defs/uuid"}, "customer_id": {"$ref": "#/$defs/uuid"}, "change": {"enum": ["created", "updated", "deleted"]}}}}}},
+    {"if": {"properties": {"event_type": {"const": "product.changed"}}}, "then": {"properties": {"source_service": {"const": "catalog"}, "payload": {"type": "object", "additionalProperties": false, "required": ["product_id", "change"], "properties": {"product_id": {"$ref": "#/$defs/uuid"}, "change": {"enum": ["created", "updated", "deleted", "restored"]}}}}}},
+    {"if": {"properties": {"event_type": {"const": "offer.changed"}}}, "then": {"properties": {"source_service": {"const": "catalog"}, "payload": {"type": "object", "additionalProperties": false, "required": ["offer_id", "change"], "properties": {"offer_id": {"$ref": "#/$defs/uuid"}, "change": {"enum": ["created", "updated", "deleted", "restored", "rules_replaced", "assignment_changed"]}}}}}},
+    {"if": {"properties": {"event_type": {"enum": ["ai.run.completed", "ai.run.failed", "ai.run.cancelled"]}}}, "then": {"properties": {"source_service": {"const": "ai"}, "payload": {"type": "object", "additionalProperties": false, "required": ["run_id", "conversation_id", "model", "status", "usage_complete"], "properties": {"run_id": {"$ref": "#/$defs/uuid"}, "conversation_id": {"$ref": "#/$defs/uuid"}, "model": {"type": "string"}, "status": {"enum": ["completed", "failed", "cancelled"]}, "usage_complete": {"type": "boolean"}, "estimated_cost_usd": {"type": ["string", "null"], "pattern": "^(0|[1-9][0-9]{0,15})\\.[0-9]{2,6}$"}}}}}},
+    {"if": {"properties": {"event_type": {"const": "ai.cost_alert.created"}}}, "then": {"properties": {"source_service": {"const": "ai"}, "payload": {"type": "object", "additionalProperties": false, "required": ["alert_id", "rule_id", "scope", "observed_value_usd"], "properties": {"alert_id": {"$ref": "#/$defs/uuid"}, "rule_id": {"$ref": "#/$defs/uuid"}, "scope": {"enum": ["run", "user_day", "global_day"]}, "observed_value_usd": {"type": "string", "pattern": "^(0|[1-9][0-9]{0,15})\\.[0-9]{2,6}$"}}}}}},
+    {"if": {"properties": {"event_type": {"const": "ai.cost_alert.acknowledged"}}}, "then": {"properties": {"source_service": {"const": "ai"}, "payload": {"type": "object", "additionalProperties": false, "required": ["alert_id"], "properties": {"alert_id": {"$ref": "#/$defs/uuid"}}}}}},
+    {"if": {"properties": {"event_type": {"const": "notification.delivery.failed"}}}, "then": {"properties": {"source_service": {"const": "ai"}, "payload": {"type": "object", "additionalProperties": false, "required": ["delivery_id", "alert_id", "channel", "error_code"], "properties": {"delivery_id": {"$ref": "#/$defs/uuid"}, "alert_id": {"$ref": "#/$defs/uuid"}, "channel": {"enum": ["ui", "email"]}, "error_code": {"type": "string", "maxLength": 80}}}}}}
+  ]
+}

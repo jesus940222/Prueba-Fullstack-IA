@@ -1,0 +1,1579 @@
+openapi: 3.1.0
+info:
+  title: IA
+  version: 1.0.0
+  description: API /api/v1/ai. El modelo no confirma transferencias ni lee conversaciones
+    ajenas.
+servers:
+- url: /
+paths:
+  /api/v1/ai/conversations:
+    post:
+      operationId: createConversation
+      tags:
+      - chat
+      summary: Crea una conversación
+      description: Solo propia.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '201':
+          description: Crea una conversación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationCreate'
+    get:
+      operationId: listConversations
+      tags:
+      - chat
+      summary: Lista conversaciones propias
+      description: No existe ruta de conversaciones ajenas.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '200':
+          description: Lista conversaciones propias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/ai/conversations/{id}:
+    get:
+      operationId: getConversation
+      tags:
+      - chat
+      summary: Lee una conversación
+      description: 404 si es de otra persona.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '200':
+          description: Lee una conversación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: renameConversation
+      tags:
+      - chat
+      summary: Cambia el título
+      description: Solo título.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '200':
+          description: Cambia el título
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationUpdate'
+    delete:
+      operationId: deleteConversation
+      tags:
+      - chat
+      summary: Oculta la conversación
+      description: No borra auditoría ni movimientos.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '204':
+          description: Oculta la conversación
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/ai/conversations/{id}/messages:
+    get:
+      operationId: listMessages
+      tags:
+      - chat
+      summary: Mensajes
+      description: Cursor.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '200':
+          description: Mensajes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageCursor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+        description: Máximo 50.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 512
+        description: 'Opaco, ligado a filtros. Inválido: 422.'
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+        description: Búsqueda acotada del propio recurso.
+    post:
+      operationId: createMessage
+      tags:
+      - chat
+      summary: Envía un mensaje
+      description: requestId evita un duplicado. No ejecuta una transferencia.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '202':
+          description: Envía un mensaje
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+  /api/v1/ai/runs/{id}:
+    get:
+      operationId: getRun
+      tags:
+      - chat
+      summary: Estado de la ejecución
+      description: Solo la propia.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '200':
+          description: Estado de la ejecución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/ai/runs/{id}/events:
+    get:
+      operationId: streamRun
+      tags:
+      - chat
+      summary: Stream de la ejecución
+      description: Sin token en la query. Reconectar no relanza el modelo.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '200':
+          description: Stream de la ejecución
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/RunStreamEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/ai/runs/{id}/cancel:
+    post:
+      operationId: cancelRun
+      tags:
+      - chat
+      summary: Cancela la ejecución
+      description: No revierte una transferencia confirmada.
+      x-authorization:
+        kind: permission
+        permission: ai:chat:use
+      responses:
+        '202':
+          description: Cancela la ejecución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/ai/me/metrics:
+    get:
+      operationId: getMyMetrics
+      tags:
+      - metrics
+      summary: Métricas propias
+      description: Sin contenido de mensajes.
+      x-authorization:
+        kind: permission
+        permission: ai:metrics:read:own
+      responses:
+        '200':
+          description: Métricas propias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+  /api/v1/ai/runs/{id}/metrics:
+    get:
+      operationId: getRunMetrics
+      tags:
+      - metrics
+      summary: Métricas de una ejecución
+      description: Own exige ser el dueño. Any no devuelve el mensaje.
+      x-authorization:
+        kind: permission
+        anyOf:
+        - permission: ai:metrics:read:own
+          ownership: true
+        - permission: ai:metrics:read:any
+      responses:
+        '200':
+          description: Métricas de una ejecución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunMetrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/ai/admin/metrics:
+    get:
+      operationId: getAdminMetrics
+      tags:
+      - admin
+      summary: Métricas globales
+      description: Sin conversaciones.
+      x-authorization:
+        kind: permission
+        permission: ai:metrics:read:any
+      responses:
+        '200':
+          description: Métricas globales
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Inicio.
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Fin.
+      - name: model
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Modelo.
+  /api/v1/ai/admin/users/{id}/metrics:
+    get:
+      operationId: getUserMetrics
+      tags:
+      - admin
+      summary: Métricas de un usuario
+      description: Sin mensajes.
+      x-authorization:
+        kind: permission
+        permission: ai:metrics:read:any
+      responses:
+        '200':
+          description: Métricas de un usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/ai/admin/alerts:
+    get:
+      operationId: listAlerts
+      tags:
+      - admin
+      summary: Alertas
+      description: Solo administradores con el permiso.
+      x-authorization:
+        kind: permission
+        permission: ai:alerts:read
+      responses:
+        '200':
+          description: Alertas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/ai/admin/alerts/{id}/acknowledge:
+    post:
+      operationId: acknowledgeAlert
+      tags:
+      - admin
+      summary: Reconoce una alerta
+      description: No deshace el consumo.
+      x-authorization:
+        kind: permission
+        permission: ai:alerts:acknowledge
+      responses:
+        '200':
+          description: Reconoce una alerta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/ai/admin/alert-rules:
+    get:
+      operationId: listAlertRules
+      tags:
+      - admin
+      summary: Reglas de alerta
+      description: Sin correo libre.
+      x-authorization:
+        kind: permission
+        permission: ai:alerts:configure
+      responses:
+        '200':
+          description: Reglas de alerta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRulePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+    put:
+      operationId: replaceAlertRules
+      tags:
+      - admin
+      summary: Reemplaza reglas
+      description: Destinatarios administrativos ya existentes.
+      x-authorization:
+        kind: permission
+        permission: ai:alerts:configure
+      responses:
+        '200':
+          description: Reemplaza reglas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRulePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleReplace'
+  /api/v1/ai/admin/documents:
+    get:
+      operationId: listDocuments
+      tags:
+      - documents
+      summary: Documentos RAG
+      description: Permiso del gestor de catálogo.
+      x-authorization:
+        kind: permission
+        permission: ai:documents:read
+      responses:
+        '200':
+          description: Documentos RAG
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/ai/admin/indexing-jobs/{id}:
+    get:
+      operationId: getIndexingJob
+      tags:
+      - documents
+      summary: Trabajo de indexación
+      description: Sin el texto completo del proveedor.
+      x-authorization:
+        kind: permission
+        permission: ai:documents:read
+      responses:
+        '200':
+          description: Trabajo de indexación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexingJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/ai/admin/documents/{id}/reindex:
+    post:
+      operationId: reindexDocument
+      tags:
+      - documents
+      summary: Reindexa un documento
+      description: Idempotente por versión y hash.
+      x-authorization:
+        kind: permission
+        permission: ai:documents:reindex
+      responses:
+        '202':
+          description: Reindexa un documento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexingJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: portal_session
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - correlationId
+      properties:
+        code:
+          type: string
+          enum:
+          - SESSION_INVALID
+          - PERMISSION_DENIED
+          - RESOURCE_NOT_VISIBLE
+          - CONFLICT
+          - IDEMPOTENCY_CONFLICT
+          - VALIDATION_ERROR
+          - BUSINESS_RULE
+          - RATE_LIMITED
+          - DEPENDENCY_UNAVAILABLE
+          - CSRF_INVALID
+          - RECENT_VERIFICATION_REQUIRED
+          - RECOVERY_POLICY_DISABLED
+          - CHALLENGE_INVALID
+        message:
+          type: string
+          maxLength: 300
+        correlationId:
+          type: string
+          format: uuid
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - code
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+    Empty:
+      type: object
+      additionalProperties: false
+      required: []
+      properties: {}
+    Conversation:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          enum:
+          - active
+          - deleted
+        createdAt:
+          type: string
+          format: date-time
+    ConversationPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversation'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    ConversationCreate:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        title:
+          type: string
+          maxLength: 120
+    ConversationUpdate:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+    Message:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - role
+      - content
+      - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          enum:
+          - user
+          - assistant
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        runId:
+          type: string
+          format: uuid
+    MessageCursor:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      - hasMore
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        nextCursor:
+          type:
+          - string
+          - 'null'
+        hasMore:
+          type: boolean
+    MessageCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - content
+      - requestId
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        requestId:
+          type: string
+          format: uuid
+    RunAccepted:
+      type: object
+      additionalProperties: false
+      required:
+      - runId
+      - conversationId
+      properties:
+        runId:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+    Run:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - model
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        status:
+          enum:
+          - queued
+          - running
+          - completed
+          - failed
+          - cancelled
+        model:
+          type: string
+        usageComplete:
+          type: boolean
+        estimatedCostUsd:
+          type:
+          - string
+          - 'null'
+    RunStreamEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      properties:
+        type:
+          enum:
+          - content
+          - tool_status
+          - confirmation_required
+          - metrics
+          - completed
+          - failed
+        proposalId:
+          type: string
+          format: uuid
+        text:
+          type: string
+    Metrics:
+      type: object
+      additionalProperties: false
+      required:
+      - usageComplete
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        runCount:
+          type: integer
+        estimatedCostUsd:
+          type:
+          - string
+          - 'null'
+        usageComplete:
+          type: boolean
+        inputTokens:
+          type:
+          - integer
+          - 'null'
+        outputTokens:
+          type:
+          - integer
+          - 'null'
+        cachedTokens:
+          type:
+          - integer
+          - 'null'
+        totalTokens:
+          type:
+          - integer
+          - 'null'
+    RunMetrics:
+      type: object
+      additionalProperties: false
+      required:
+      - runId
+      - model
+      - usageComplete
+      properties:
+        runId:
+          type: string
+          format: uuid
+        model:
+          type: string
+        latencyMs:
+          type:
+          - integer
+          - 'null'
+        timeToFirstContentMs:
+          type:
+          - integer
+          - 'null'
+        usageComplete:
+          type: boolean
+        estimatedCostUsd:
+          type:
+          - string
+          - 'null'
+        pricingVersion:
+          type: string
+        inputTokens:
+          type:
+          - integer
+          - 'null'
+        outputTokens:
+          type:
+          - integer
+          - 'null'
+        cachedTokens:
+          type:
+          - integer
+          - 'null'
+        totalTokens:
+          type:
+          - integer
+          - 'null'
+    Alert:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - observedValueUsd
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleId:
+          type: string
+          format: uuid
+        scope:
+          enum:
+          - run
+          - user_day
+          - global_day
+        observedValueUsd:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2,6}$
+        status:
+          enum:
+          - open
+          - acknowledged
+    AlertPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    AlertRule:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - scope
+      - metric
+      - threshold
+      - enabled
+      - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        scope:
+          enum:
+          - run
+          - user_day
+          - global_day
+        metric:
+          const: estimated_cost_usd
+        threshold:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2,6}$
+        window:
+          enum:
+          - run
+          - day
+        cooldownSeconds:
+          type: integer
+          minimum: 1
+        enabled:
+          type: boolean
+        version:
+          type: integer
+        administrativeRecipientIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    AlertRulePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertRule'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    AlertRuleReplace:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - rules
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertRule'
+    KnowledgeDocument:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - version
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        version:
+          type: integer
+        contentHash:
+          type: string
+        audience:
+          enum:
+          - general
+          - administrative
+        status:
+          enum:
+          - active
+          - disabled
+    DocumentPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KnowledgeDocument'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    IndexingJob:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - documentId
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        embeddingModel:
+          type: string
+        dimensions:
+          type: integer
+        status:
+          enum:
+          - queued
+          - running
+          - completed
+          - failed
+        processedChunks:
+          type: integer
+        errorCode:
+          type:
+          - string
+          - 'null'
+  responses:
+    Unauthorized:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

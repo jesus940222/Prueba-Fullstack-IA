@@ -1,0 +1,16 @@
+# Proyecto aislado guia-entrega. No usa los volúmenes de guia-portal.
+# La clave de OpenAI queda vacía a propósito: el arranque limpio no llama al proveedor ni genera cargos de indexación.
+services:
+  mailpit:
+    ports: !override
+      - "127.0.0.1:18025:8025"
+  gateway:
+    ports: !override
+      - "127.0.0.1:18080:8080"
+  ai:
+    environment:
+      OPENAI_API_KEY: ""
+  ai-migrate:
+    environment:
+      OPENAI_API_KEY: ""
+

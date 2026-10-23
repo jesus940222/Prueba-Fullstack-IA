@@ -1,0 +1,53 @@
+flowchart TB
+  usuario[Usuario]
+  web["Web React HeroUI v3"]
+  proxy["Proxy mismo origen"]
+  usuario --> web --> proxy
+
+  acceso[Acceso]
+  cuentas[Cuentas]
+  catalogo[Catalogo]
+  auditoria[Auditoria]
+  ia[IA]
+
+  proxy -->|"REST /api/v1/access"| acceso
+  proxy -->|"REST /api/v1/accounts"| cuentas
+  proxy -->|"REST /api/v1/catalog"| catalogo
+  proxy -->|"REST /api/v1/audit"| auditoria
+  proxy -->|"REST /api/v1/ai"| ia
+
+  cuentas -->|"POST authorize"| acceso
+  catalogo -->|"POST authorize"| acceso
+  auditoria -->|"POST authorize"| acceso
+  ia -->|"POST authorize"| acceso
+  catalogo -->|"POST eligibility-context"| cuentas
+  ia -->|"Herramientas de cuentas"| cuentas
+  ia -->|"Herramientas de catalogo"| catalogo
+
+  subgraph pgbox ["PostgreSQL un contenedor, cuatro bases y credenciales"]
+    pgAcceso[("base access")]
+    pgCuentas[("base accounts")]
+    pgCatalogo[("base catalog")]
+    pgIa[("base ai")]
+  end
+
+  acceso --> pgAcceso
+  cuentas --> pgCuentas
+  catalogo --> pgCatalogo
+  ia --> pgIa
+  acceso --> redis[("Redis cache de permisos")]
+  auditoria --> mongo[("MongoDB eventos")]
+  ia --> qdrant[("Qdrant knowledge")]
+
+  rabbit["RabbitMQ portal.events"]
+  acceso -->|"outbox"| rabbit
+  cuentas -->|"outbox"| rabbit
+  catalogo -->|"outbox"| rabbit
+  ia -->|"outbox"| rabbit
+  rabbit -->|"consumidor"| auditoria
+  rabbit -->|"agotado"| dlq["DLQ audit.events.dlq"]
+
+  acceso --> google["Google OIDC"]
+  acceso --> microsoft["Microsoft OIDC"]
+  acceso --> mail["Mailpit local"]
+  ia --> openai["OpenAI Responses y embeddings"]

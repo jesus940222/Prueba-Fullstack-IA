@@ -1,0 +1,66 @@
+{
+  "name": "@portal/web",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage --runInBand"
+  },
+  "dependencies": {
+    "@heroui/react": "3.2.6",
+    "@heroui/styles": "3.2.6",
+    "@hookform/resolvers": "6.0.0",
+    "@internationalized/date": "3.12.4",
+    "@react-aria/ssr": "3.10.1",
+    "@react-aria/utils": "3.34.1",
+    "@tanstack/react-query": "5.104.5",
+    "react": "19.3.1",
+    "react-aria": "3.53.1",
+    "react-aria-components": "1.22.1",
+    "react-dom": "19.3.1",
+    "react-hook-form": "7.90.0",
+    "react-router": "8.5.0",
+    "tailwindcss": "4.3.3",
+    "zod": "4.6.7",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/jest": "30.0.0",
+    "@types/node": "24.19.2",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "6.1.2",
+    "jest": "30.5.2",
+    "jest-environment-jsdom": "30.5.2",
+    "ts-jest": "29.4.15",
+    "typescript": "6.0.3",
+    "vite": "8.3.5"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "jsdom",
+    "testMatch": ["**/*.spec.tsx", "**/*.spec.ts"],
+    "setupFiles": ["<rootDir>/test/polyfills.ts"],
+    "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"],
+    "moduleNameMapper": {
+      "\\.(css)$": "<rootDir>/test/style-mock.cjs"
+    },
+    "collectCoverageFrom": ["src/**/*.{ts,tsx}", "!src/main.tsx", "!src/vite-env.d.ts"],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    },
+    "coverageReporters": ["text", "lcov", "html"]
+  }
+}

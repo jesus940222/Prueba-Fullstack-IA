@@ -1,0 +1,13 @@
+---
+description: Arquitectura, seguridad y proceso obligatorio del portal financiero
+alwaysApply: true
+---
+
+Lee y cumple AGENTS.md antes de modificar el proyecto.
+La especificación canónica está en docs/01 a docs/10.
+Ejecuta solo la fase solicitada y verifica sus criterios en prompts/.
+Clean Architecture y DDD se validan por dependencias y reglas, no por nombres de carpetas.
+No generar un monolito repartido: cada servicio posee sus datos y se comunica por contratos.
+Nunca confirmar transferencias desde decisiones del modelo.
+No ocultar fallos, métricas incompletas ni integraciones no verificadas.
+Toda propuesta numérica provisional se mantiene configurable y documentada.

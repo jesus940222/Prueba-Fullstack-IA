@@ -1,0 +1,28 @@
+flowchart TB
+  subgraph productores [Productores duenos del dato]
+    acceso[Acceso]
+    cuentas[Cuentas]
+    catalogo[Catalogo]
+    ia[IA]
+  end
+
+  acceso --> outA[Outbox access]
+  cuentas --> outC[Outbox accounts]
+  catalogo --> outP[Outbox catalog]
+  ia --> outI[Outbox ai]
+
+  outA --> pub[Publicador con confirmacion y reintentos]
+  outC --> pub
+  outP --> pub
+  outI --> pub
+  pub --> rabbit[RabbitMQ exchange portal.events]
+  rabbit --> cola[Cola audit.events]
+  cola --> val[Validar esquema y event_id]
+  val -->|nuevo| mongo[("MongoDB insert")]
+  val -->|duplicado| ack[Confirmar sin duplicar]
+  mongo --> ack
+  val -->|fallo recuperable| retry[Reintento acotado]
+  retry --> val
+  retry -->|agotado| dlq[Cola audit.events.dlq]
+  mongo --> lectura[API de Auditoria]
+  lectura -->|"evento de consulta en proceso"| mongo

@@ -1,0 +1,8 @@
+{
+  "extends": "../../packages/ts-config/base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "jest", "@testing-library/jest-dom", "node"]
+  },
+  "include": ["src", "test"]
+}

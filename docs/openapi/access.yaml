@@ -1,0 +1,3587 @@
+openapi: 3.1.0
+info:
+  title: Acceso
+  version: 1.0.0
+  description: API /api/v1/access e interna de autorización. El correo no se edita
+    en v1. La recuperación completa queda cerrada.
+servers:
+- url: /
+paths:
+  /api/v1/access/auth/login:
+    post:
+      operationId: login
+      tags:
+      - auth
+      summary: Inicia desafío con correo y contraseña
+      description: No crea sesión plena.
+      x-authorization:
+        kind: public
+      responses:
+        '200':
+          description: Inicia desafío con correo y contraseña
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStep'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+  /api/v1/access/auth/oidc/{provider}/start:
+    get:
+      operationId: oidcStart
+      tags:
+      - auth
+      summary: Inicia OIDC
+      description: Google o Microsoft, con state, nonce y PKCE. returnTo solo interno.
+      x-authorization:
+        kind: redirect
+      responses:
+        '302':
+          description: Inicia OIDC
+          headers:
+            Location:
+              description: Destino interno o proveedor
+              schema:
+                type: string
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security: []
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          enum:
+          - google
+          - microsoft
+      - name: returnTo
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Ruta interna.
+  /api/v1/access/auth/oidc/{provider}/callback:
+    get:
+      operationId: oidcCallback
+      tags:
+      - auth
+      summary: Callback OIDC
+      description: Valida issuer, audience, firma, nonce, state y distingue login
+        de vinculación.
+      x-authorization:
+        kind: redirect
+      responses:
+        '302':
+          description: Callback OIDC
+          headers:
+            Location:
+              description: Destino interno o proveedor
+              schema:
+                type: string
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security: []
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          enum:
+          - google
+          - microsoft
+      - name: code
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Código del proveedor.
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Estado emitido por Acceso.
+  /api/v1/access/auth/challenges/{id}/email/resend:
+    post:
+      operationId: resendEmailChallenge
+      tags:
+      - auth
+      summary: Reenvía el código e invalida el anterior
+      description: El desafío no otorga autorización funcional.
+      x-authorization:
+        kind: challenge
+        csrf: true
+      responses:
+        '200':
+          description: Reenvía el código e invalida el anterior
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStep'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/auth/challenges/{id}/email/verify:
+    post:
+      operationId: verifyEmailChallenge
+      tags:
+      - auth
+      summary: Consume el código
+      description: El desafío no otorga autorización funcional.
+      x-authorization:
+        kind: challenge
+        csrf: true
+      responses:
+        '200':
+          description: Consume el código
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStep'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeProof'
+  /api/v1/access/auth/challenges/{id}/passkey/options:
+    post:
+      operationId: passkeyOptions
+      tags:
+      - auth
+      summary: Opciones WebAuthn del desafío
+      description: El desafío no otorga autorización funcional.
+      x-authorization:
+        kind: challenge
+        csrf: true
+      responses:
+        '200':
+          description: Opciones WebAuthn del desafío
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStep'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/auth/challenges/{id}/passkey/verify:
+    post:
+      operationId: verifyPasskey
+      tags:
+      - auth
+      summary: Verifica la passkey
+      description: El desafío no otorga autorización funcional.
+      x-authorization:
+        kind: challenge
+        csrf: true
+      responses:
+        '200':
+          description: Verifica la passkey
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStep'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeProof'
+  /api/v1/access/auth/challenges/{id}/recovery-code/verify:
+    post:
+      operationId: verifyRecoveryCode
+      tags:
+      - auth
+      summary: Código de recuperación restringido
+      description: El desafío no otorga autorización funcional.
+      x-authorization:
+        kind: challenge
+        csrf: true
+      responses:
+        '200':
+          description: Código de recuperación restringido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStep'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeProof'
+  /api/v1/access/auth/password/forgot:
+    post:
+      operationId: forgotPassword
+      tags:
+      - auth
+      summary: Solicita recuperación
+      description: Respuesta genérica, exista o no la cuenta.
+      x-authorization:
+        kind: public
+      responses:
+        '202':
+          description: Solicita recuperación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPassword'
+  /api/v1/access/auth/password/reset:
+    post:
+      operationId: resetPassword
+      tags:
+      - auth
+      summary: Restablece contraseña
+      description: Token de un uso. Revoca sesiones y no omite la passkey.
+      x-authorization:
+        kind: public
+      responses:
+        '204':
+          description: Restablece contraseña
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+  /api/v1/access/auth/refresh:
+    post:
+      operationId: refreshSession
+      tags:
+      - auth
+      summary: Rota el refresh
+      description: Reutilizar un refresh revoca la familia.
+      x-authorization:
+        kind: session
+      responses:
+        '204':
+          description: Rota el refresh
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/auth/logout:
+    post:
+      operationId: logout
+      tags:
+      - auth
+      summary: Cierra la sesión actual
+      description: Idempotente.
+      x-authorization:
+        kind: session
+      responses:
+        '204':
+          description: Cierra la sesión actual
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/auth/logout-all:
+    post:
+      operationId: logoutAll
+      tags:
+      - auth
+      summary: Cierra todas las sesiones propias
+      description: Revoca refresh de la persona.
+      x-authorization:
+        kind: session
+      responses:
+        '204':
+          description: Cierra todas las sesiones propias
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/me:
+    get:
+      operationId: getMe
+      tags:
+      - profile
+      summary: Lee el perfil
+      description: Sin roles ni secretos.
+      x-authorization:
+        kind: permission
+        permission: profile:read:own
+      responses:
+        '200':
+          description: Lee el perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+    patch:
+      operationId: updateMe
+      tags:
+      - profile
+      summary: Actualiza el perfil
+      description: 'Allowlist: nombre, teléfono y tema. El correo no es editable en
+        v1.'
+      x-authorization:
+        kind: permission
+        permission: profile:update:own
+      responses:
+        '200':
+          description: Actualiza el perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+  /api/v1/access/me/permissions:
+    get:
+      operationId: listMyPermissions
+      tags:
+      - profile
+      summary: Permisos efectivos
+      description: La UI no los convierte en autorización.
+      x-authorization:
+        kind: session
+      responses:
+        '200':
+          description: Permisos efectivos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+  /api/v1/access/me/password/change:
+    post:
+      operationId: changePassword
+      tags:
+      - security
+      summary: Cambia la contraseña
+      description: Exige verificación reciente y revoca las otras sesiones.
+      x-authorization:
+        kind: permission
+        permission: security:manage:own
+        recentVerification: true
+      responses:
+        '204':
+          description: Cambia la contraseña
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+  /api/v1/access/me/sessions:
+    get:
+      operationId: listMySessions
+      tags:
+      - security
+      summary: Lista sesiones propias
+      description: Paginada.
+      x-authorization:
+        kind: permission
+        permission: sessions:read:own
+      responses:
+        '200':
+          description: Lista sesiones propias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/access/me/sessions/{id}:
+    delete:
+      operationId: revokeMySession
+      tags:
+      - security
+      summary: Revoca una sesión propia
+      description: Idempotente si ya estaba revocada. La ajena responde 404.
+      x-authorization:
+        kind: permission
+        permission: sessions:revoke:own
+      responses:
+        '204':
+          description: Revoca una sesión propia
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/access/me/passkeys:
+    get:
+      operationId: listPasskeys
+      tags:
+      - security
+      summary: Lista passkeys
+      description: El identificador de UI es interno.
+      x-authorization:
+        kind: permission
+        permission: security:manage:own
+      responses:
+        '200':
+          description: Lista passkeys
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasskeyPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/access/me/passkeys/registration/options:
+    post:
+      operationId: passkeyRegistrationOptions
+      tags:
+      - security
+      summary: Opciones de alta
+      description: Sesión propia o sesión restringida de alta.
+      x-authorization:
+        kind: permission
+        anyOf:
+        - permission: security:manage:own
+        - sessionState: passkey-enrollment
+      responses:
+        '200':
+          description: Opciones de alta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasskeyOptions'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/me/passkeys/registration/verify:
+    post:
+      operationId: passkeyRegistrationVerify
+      tags:
+      - security
+      summary: Verifica el alta
+      description: Ata el desafío y no guarda biometría ni clave privada.
+      x-authorization:
+        kind: permission
+        anyOf:
+        - permission: security:manage:own
+          recentVerification: true
+        - sessionState: passkey-enrollment
+      responses:
+        '201':
+          description: Verifica el alta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Passkey'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyAttestation'
+  /api/v1/access/me/passkeys/{id}:
+    patch:
+      operationId: renamePasskey
+      tags:
+      - security
+      summary: Renombra una passkey
+      description: Solo el nombre.
+      x-authorization:
+        kind: permission
+        permission: security:manage:own
+      responses:
+        '200':
+          description: Renombra una passkey
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Passkey'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyRename'
+    delete:
+      operationId: revokePasskey
+      tags:
+      - security
+      summary: Revoca una passkey
+      description: No desactiva la política al revocar la última.
+      x-authorization:
+        kind: permission
+        permission: security:manage:own
+      responses:
+        '204':
+          description: Revoca una passkey
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/access/me/recovery-codes/regenerate:
+    post:
+      operationId: regenerateRecoveryCodes
+      tags:
+      - security
+      summary: Regenera códigos
+      description: Se muestran una vez. Revoca los anteriores.
+      x-authorization:
+        kind: permission
+        permission: security:manage:own
+        recentVerification: true
+      responses:
+        '200':
+          description: Regenera códigos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryCodes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/me/identities:
+    get:
+      operationId: listIdentities
+      tags:
+      - security
+      summary: Lista identidades vinculadas
+      description: Sin tokens del proveedor.
+      x-authorization:
+        kind: permission
+        permission: security:manage:own
+      responses:
+        '200':
+          description: Lista identidades vinculadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/access/me/identities/{provider}/link:
+    post:
+      operationId: linkIdentity
+      tags:
+      - security
+      summary: Inicia vinculación
+      description: Exige sesión reciente y no vincula por coincidencia de correo.
+      x-authorization:
+        kind: permission
+        permission: security:manage:own
+      responses:
+        '200':
+          description: Inicia vinculación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkStart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          enum:
+          - google
+          - microsoft
+  /api/v1/access/me/identities/{id}:
+    delete:
+      operationId: unlinkIdentity
+      tags:
+      - security
+      summary: Revoca una identidad
+      description: No deja a la persona sin un acceso utilizable.
+      x-authorization:
+        kind: permission
+        permission: security:manage:own
+      responses:
+        '204':
+          description: Revoca una identidad
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/access/users:
+    get:
+      operationId: listUsers
+      tags:
+      - users
+      summary: Lista usuarios
+      description: Soporte recibe proyección mínima.
+      x-authorization:
+        kind: permission
+        permission: users:read
+      responses:
+        '200':
+          description: Lista usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: includeDeleted
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Solo los literales true o false. false no es true. Sin el permiso
+          de eliminados responde 403.
+      - name: status
+        in: query
+        required: false
+        schema:
+          enum:
+          - invited
+          - active
+          - disabled
+        description: Estado.
+    post:
+      operationId: createUser
+      tags:
+      - users
+      summary: Invita un usuario
+      description: No devuelve contraseña.
+      x-authorization:
+        kind: permission
+        permission: users:create
+      responses:
+        '201':
+          description: Invita un usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+  /api/v1/access/users/{id}:
+    get:
+      operationId: getUser
+      tags:
+      - users
+      summary: Lee un usuario
+      description: Sin credenciales ni finanzas.
+      x-authorization:
+        kind: permission
+        permission: users:read
+      responses:
+        '200':
+          description: Lee un usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateUser
+      tags:
+      - users
+      summary: Actualiza campos permitidos
+      description: No cambia roles, passkeys ni recuperación.
+      x-authorization:
+        kind: permission
+        permission: users:update
+      responses:
+        '200':
+          description: Actualiza campos permitidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+    delete:
+      operationId: deleteUser
+      tags:
+      - users
+      summary: Borrado lógico
+      description: Revoca sesiones.
+      x-authorization:
+        kind: permission
+        permission: users:delete
+      responses:
+        '204':
+          description: Borrado lógico
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/access/users/{id}/restore:
+    post:
+      operationId: restoreUser
+      tags:
+      - users
+      summary: Restaura el usuario
+      description: No reactiva credenciales ni asignaciones.
+      x-authorization:
+        kind: permission
+        permission: users:restore
+      responses:
+        '200':
+          description: Restaura el usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/users/{id}/sessions/revoke:
+    post:
+      operationId: revokeUserSessions
+      tags:
+      - users
+      summary: Revoca sesiones de un usuario
+      description: Idempotente.
+      x-authorization:
+        kind: permission
+        permission: sessions:revoke:any
+      responses:
+        '204':
+          description: Revoca sesiones de un usuario
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/users/{id}/passkey-policy:
+    patch:
+      operationId: configurePasskeyPolicy
+      tags:
+      - users
+      summary: Habilita o deshabilita passkey
+      description: El administrador no marca active. Desactivar una passkey activa
+        queda cerrado por la política.
+      x-authorization:
+        kind: permission
+        permission: security:passkeys:configure
+      responses:
+        '200':
+          description: Habilita o deshabilita passkey
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasskeyPolicy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyPolicyChange'
+  /api/v1/access/users/{id}/recovery-requests:
+    post:
+      operationId: initiateRecovery
+      tags:
+      - users
+      summary: Inicia recuperación
+      description: No completa la recuperación.
+      x-authorization:
+        kind: permission
+        permission: security:recovery:initiate
+      responses:
+        '202':
+          description: Inicia recuperación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryInitiate'
+  /api/v1/access/recovery-requests/{id}/complete:
+    post:
+      operationId: completeRecovery
+      tags:
+      - users
+      summary: Completa recuperación
+      description: En v1 responde RECOVERY_POLICY_DISABLED. No hay bypass.
+      x-authorization:
+        kind: permission
+        permission: security:recovery:complete
+      responses:
+        '204':
+          description: Completa recuperación
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/applications:
+    get:
+      operationId: listApplications
+      tags:
+      - applications
+      summary: Lista aplicaciones
+      description: Paginada.
+      x-authorization:
+        kind: permission
+        permission: applications:read
+      responses:
+        '200':
+          description: Lista aplicaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: includeDeleted
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Solo los literales true o false. false no es true. Sin el permiso
+          de eliminados responde 403.
+    post:
+      operationId: createApplication
+      tags:
+      - applications
+      summary: Crea una aplicación
+      description: Código estable.
+      x-authorization:
+        kind: permission
+        permission: applications:create
+      responses:
+        '201':
+          description: Crea una aplicación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationWrite'
+  /api/v1/access/applications/{id}:
+    get:
+      operationId: getApplication
+      tags:
+      - applications
+      summary: Lee una aplicación
+      description: Sin secretos.
+      x-authorization:
+        kind: permission
+        permission: applications:read
+      responses:
+        '200':
+          description: Lee una aplicación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateApplication
+      tags:
+      - applications
+      summary: Actualiza una aplicación
+      description: Nombre y descripción.
+      x-authorization:
+        kind: permission
+        permission: applications:update
+      responses:
+        '200':
+          description: Actualiza una aplicación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationUpdate'
+    delete:
+      operationId: deleteApplication
+      tags:
+      - applications
+      summary: Borra una aplicación
+      description: Borrado lógico.
+      x-authorization:
+        kind: permission
+        permission: applications:delete
+      responses:
+        '204':
+          description: Borra una aplicación
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/access/applications/{id}/restore:
+    post:
+      operationId: restoreApplication
+      tags:
+      - applications
+      summary: Restaura una aplicación
+      description: No reactiva roles retirados.
+      x-authorization:
+        kind: permission
+        permission: applications:restore
+      responses:
+        '200':
+          description: Restaura una aplicación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/applications/{appId}/permissions:
+    get:
+      operationId: listPermissions
+      tags:
+      - roles
+      summary: Lee el catálogo de permisos
+      description: Sin alta ni edición.
+      x-authorization:
+        kind: permission
+        permission: permissions:read
+      responses:
+        '200':
+          description: Lee el catálogo de permisos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionCatalog'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/access/applications/{appId}/roles:
+    get:
+      operationId: listRoles
+      tags:
+      - roles
+      summary: Lista roles
+      description: Paginada.
+      x-authorization:
+        kind: permission
+        permission: roles:read
+      responses:
+        '200':
+          description: Lista roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: includeDeleted
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Solo los literales true o false. false no es true. Sin el permiso
+          de eliminados responde 403.
+    post:
+      operationId: createRole
+      tags:
+      - roles
+      summary: Crea un rol personalizado
+      description: Solo permisos delegables.
+      x-authorization:
+        kind: permission
+        permission: roles:create
+      responses:
+        '201':
+          description: Crea un rol personalizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreate'
+  /api/v1/access/applications/{appId}/roles/{roleId}:
+    get:
+      operationId: getRole
+      tags:
+      - roles
+      summary: Lee un rol
+      description: Incluye códigos de permiso.
+      x-authorization:
+        kind: permission
+        permission: roles:read
+      responses:
+        '200':
+          description: Lee un rol
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: roleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateRole
+      tags:
+      - roles
+      summary: Actualiza nombre y descripción
+      description: No cambia permisos ni un rol de sistema.
+      x-authorization:
+        kind: permission
+        permission: roles:update
+      responses:
+        '200':
+          description: Actualiza nombre y descripción
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: roleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpdate'
+    delete:
+      operationId: deleteRole
+      tags:
+      - roles
+      summary: Borra un rol
+      description: Bloqueado si tiene asignaciones activas o es de sistema.
+      x-authorization:
+        kind: permission
+        permission: roles:delete
+      responses:
+        '204':
+          description: Borra un rol
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: roleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/access/applications/{appId}/roles/{roleId}/restore:
+    post:
+      operationId: restoreRole
+      tags:
+      - roles
+      summary: Restaura un rol
+      description: No devuelve asignaciones retiradas.
+      x-authorization:
+        kind: permission
+        permission: roles:restore
+      responses:
+        '200':
+          description: Restaura un rol
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: roleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/access/applications/{appId}/roles/{roleId}/permissions:
+    put:
+      operationId: replaceRolePermissions
+      tags:
+      - roles
+      summary: Reemplaza permisos
+      description: Atómico, con versión. No edita el rol propio ni un rol de sistema.
+      x-authorization:
+        kind: permission
+        permission: roles:permissions:assign
+      responses:
+        '200':
+          description: Reemplaza permisos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: roleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolePermissions'
+  /api/v1/access/users/{userId}/role-assignments:
+    get:
+      operationId: listRoleAssignments
+      tags:
+      - roles
+      summary: Lista asignaciones
+      description: Paginada.
+      x-authorization:
+        kind: permission
+        permission: users:roles:read
+      responses:
+        '200':
+          description: Lista asignaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+    post:
+      operationId: assignRole
+      tags:
+      - roles
+      summary: Asigna un rol
+      description: No al propio usuario. Cada permiso del rol debe ser delegable o
+        el rol de sistema debe estar permitido.
+      x-authorization:
+        kind: permission
+        permission: users:roles:assign
+      responses:
+        '201':
+          description: Asigna un rol
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentCreate'
+  /api/v1/access/users/{userId}/role-assignments/{id}:
+    delete:
+      operationId: revokeRoleAssignment
+      tags:
+      - roles
+      summary: Revoca una asignación
+      description: Protege al último administrador.
+      x-authorization:
+        kind: permission
+        permission: users:roles:revoke
+      responses:
+        '204':
+          description: Revoca una asignación
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/access/.well-known/jwks.json:
+    get:
+      operationId: jwks
+      tags:
+      - auth
+      summary: Claves públicas
+      description: Solo claves públicas para validar firma. No sustituye a authorize.
+      x-authorization:
+        kind: public
+      responses:
+        '200':
+          description: Claves públicas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwks'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security: []
+  /internal/v1/access/authorize:
+    post:
+      operationId: authorize
+      tags:
+      - internal
+      summary: Autorización authoritative
+      description: No está en el proxy público. Niega si la sesión o la versión no
+        sirven. 503 si la base no responde.
+      x-authorization:
+        kind: service
+        audience: access.authorize
+      responses:
+        '200':
+          description: Autorización authoritative
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizeResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - serviceCredential: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizeRequest'
+  /internal/v1/access/alert-recipients:
+    post:
+      operationId: alertRecipients
+      tags:
+      - internal
+      summary: Correos de administradores de alertas
+      description: Solo el servicio ai. No está en el proxy público. Sin userIds
+        devuelve los administradores activos con ai:alerts:read. Omite usuarios
+        inactivos o sin ese permiso.
+      x-authorization:
+        kind: service
+        audience: access.alert-recipients
+      responses:
+        '200':
+          description: Destinatarios autorizados
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [recipients]
+                properties:
+                  recipients:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: false
+                      required: [userId, email]
+                      properties:
+                        userId:
+                          type: string
+                          format: uuid
+                        email:
+                          type: string
+      security:
+      - serviceCredential: []
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: portal_session
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+    serviceCredential:
+      type: http
+      scheme: bearer
+      bearerFormat: service-jwt
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - correlationId
+      properties:
+        code:
+          type: string
+          enum:
+          - SESSION_INVALID
+          - PERMISSION_DENIED
+          - RESOURCE_NOT_VISIBLE
+          - CONFLICT
+          - IDEMPOTENCY_CONFLICT
+          - VALIDATION_ERROR
+          - BUSINESS_RULE
+          - RATE_LIMITED
+          - DEPENDENCY_UNAVAILABLE
+          - CSRF_INVALID
+          - RECENT_VERIFICATION_REQUIRED
+          - RECOVERY_POLICY_DISABLED
+          - CHALLENGE_INVALID
+        message:
+          type: string
+          maxLength: 300
+        correlationId:
+          type: string
+          format: uuid
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - code
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+    Empty:
+      type: object
+      additionalProperties: false
+      required: []
+      properties: {}
+    Accepted:
+      type: object
+      additionalProperties: false
+      required:
+      - accepted
+      properties:
+        accepted:
+          const: true
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 200
+    AuthStep:
+      type: object
+      additionalProperties: false
+      required:
+      - nextStep
+      properties:
+        challengeId:
+          type: string
+          format: uuid
+        nextStep:
+          enum:
+          - EMAIL_CHALLENGE
+          - PASSKEY_CHALLENGE
+          - PASSKEY_ENROLLMENT_REQUIRED
+          - RECOVERY_RESTRICTED
+          - AUTHENTICATED
+        expiresAt:
+          type: string
+          format: date-time
+        options:
+          type: object
+          description: Opciones públicas de WebAuthn cuando el paso las necesita.
+            No incluyen clave privada.
+    ChallengeProof:
+      type: object
+      additionalProperties: false
+      required:
+      - proof
+      properties:
+        proof:
+          type: string
+          minLength: 1
+          maxLength: 8000
+    ForgotPassword:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    ResetPassword:
+      type: object
+      additionalProperties: false
+      required:
+      - token
+      - password
+      properties:
+        token:
+          type: string
+          minLength: 20
+          maxLength: 512
+        password:
+          type: string
+          minLength: 12
+          maxLength: 200
+    Profile:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - email
+      - givenName
+      - familyName
+      - themePreference
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        givenName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        familyName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        phoneE164:
+          type:
+          - string
+          - 'null'
+        themePreference:
+          enum:
+          - light
+          - dark
+          - system
+        status:
+          enum:
+          - invited
+          - active
+          - disabled
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        givenName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        familyName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        phoneCountryCode:
+          type: string
+          pattern: ^[A-Z]{2}$
+        phoneNumber:
+          type: string
+          pattern: ^[0-9]{4,15}$
+        themePreference:
+          enum:
+          - light
+          - dark
+          - system
+      description: Al menos un campo. El servidor rechaza el objeto vacío.
+    PermissionList:
+      type: object
+      additionalProperties: false
+      required:
+      - permissions
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+    PasswordChange:
+      type: object
+      additionalProperties: false
+      required:
+      - currentPassword
+      - newPassword
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 200
+    Session:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - createdAt
+      - expiresAt
+      - revoked
+      properties:
+        id:
+          type: string
+          format: uuid
+        authenticationMethod:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        revoked:
+          type: boolean
+    SessionPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    Passkey:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    PasskeyPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Passkey'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    PasskeyOptions:
+      type: object
+      additionalProperties: false
+      required:
+      - challengeId
+      - options
+      properties:
+        challengeId:
+          type: string
+          format: uuid
+        options:
+          type: object
+          description: Opciones públicas de WebAuthn. El servidor las genera y no
+            incluyen clave privada.
+    PasskeyAttestation:
+      type: object
+      additionalProperties: false
+      required:
+      - challengeId
+      - response
+      properties:
+        challengeId:
+          type: string
+          format: uuid
+        response:
+          type: object
+    PasskeyRename:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+    RecoveryCodes:
+      type: object
+      additionalProperties: false
+      required:
+      - codes
+      properties:
+        codes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    Identity:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - provider
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          enum:
+          - google
+          - microsoft
+        linkedAt:
+          type: string
+          format: date-time
+    IdentityPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Identity'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    LinkStart:
+      type: object
+      additionalProperties: false
+      required:
+      - authorizationUrl
+      properties:
+        authorizationUrl:
+          type: string
+    User:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - email
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        givenName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        familyName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        status:
+          enum:
+          - invited
+          - active
+          - disabled
+        deletedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    UserPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    UserCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - givenName
+      - familyName
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        givenName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        familyName:
+          type: string
+          minLength: 1
+          maxLength: 80
+    UserUpdate:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        givenName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        familyName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        status:
+          enum:
+          - active
+          - disabled
+    PasskeyPolicy:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      properties:
+        status:
+          enum:
+          - disabled
+          - pending
+          - active
+        enabledAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    PasskeyPolicyChange:
+      type: object
+      additionalProperties: false
+      required:
+      - action
+      properties:
+        action:
+          enum:
+          - enable
+          - disable
+    RecoveryInitiate:
+      type: object
+      additionalProperties: false
+      required:
+      - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+    RecoveryRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          const: pending
+    Application:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - name
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 500
+        status:
+          enum:
+          - active
+          - disabled
+    ApplicationPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Application'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    ApplicationWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 500
+    ApplicationUpdate:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 500
+    PermissionCatalog:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionItem'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    PermissionItem:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - resource
+      - action
+      - scope
+      properties:
+        code:
+          type: string
+        resource:
+          type: string
+        action:
+          type: string
+        scope:
+          type: string
+    Role:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - name
+      - version
+      - system
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+        version:
+          type: integer
+        system:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+    RolePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    RoleCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      - permissionCodes
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 500
+        permissionCodes:
+          type: array
+          items:
+            type: string
+    RoleUpdate:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 500
+    RolePermissions:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - permissionCodes
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        permissionCodes:
+          type: array
+          items:
+            type: string
+    RoleAssignment:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - roleId
+      - userId
+      properties:
+        id:
+          type: string
+          format: uuid
+        roleId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    AssignmentPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignment'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    AssignmentCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - roleId
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    Jwks:
+      type: object
+      additionalProperties: false
+      required:
+      - keys
+      properties:
+        keys:
+          type: array
+          items:
+            type: object
+    AuthorizeRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - sessionToken
+      - applicationCode
+      - permission
+      properties:
+        sessionToken:
+          type: string
+          minLength: 20
+        applicationCode:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        permission:
+          type: string
+        requireRecentVerification:
+          type: boolean
+          description: Si es true y la verificación de la sesión superó el plazo, la decisión es deny con reasonCode recent_verification_required. Lo usa Cuentas al confirmar y al cambiar límites.
+        context:
+          type: object
+          additionalProperties: false
+          required: []
+          properties:
+            resourceType:
+              type: string
+            resourceId:
+              type: string
+              format: uuid
+            customerId:
+              type: string
+              format: uuid
+    AuthorizeResult:
+      type: object
+      additionalProperties: false
+      required:
+      - decision
+      - authorizationVersion
+      properties:
+        decision:
+          enum:
+          - allow
+          - deny
+        authorizationVersion:
+          type: integer
+        reasonCode:
+          type: string
+        recentlyVerified:
+          type: boolean
+        principal:
+          type: object
+          additionalProperties: false
+          required:
+          - userId
+          - sessionId
+          properties:
+            userId:
+              type: string
+              format: uuid
+            sessionId:
+              type: string
+              format: uuid
+            customerId:
+              type:
+              - string
+              - 'null'
+              format: uuid
+  responses:
+    Unauthorized:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

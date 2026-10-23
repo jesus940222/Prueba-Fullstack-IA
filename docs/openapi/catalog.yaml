@@ -1,0 +1,2017 @@
+openapi: 3.1.0
+info:
+  title: Catálogo
+  version: 1.0.0
+  description: API /api/v1/catalog. No hay contratación ni registro de interés. Cada
+    verbo tiene su permiso.
+servers:
+- url: /
+paths:
+  /api/v1/catalog/categories:
+    get:
+      operationId: listPublicCategories
+      tags:
+      - public
+      summary: Categorías activas
+      description: Solo activas.
+      x-authorization:
+        kind: permission
+        permission: products:read
+      responses:
+        '200':
+          description: Categorías activas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/catalog/products:
+    get:
+      operationId: listPublicProducts
+      tags:
+      - public
+      summary: Productos activos
+      description: Sin borradores.
+      x-authorization:
+        kind: permission
+        permission: products:read
+      responses:
+        '200':
+          description: Productos activos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+        description: Filtro.
+  /api/v1/catalog/products/{id}:
+    get:
+      operationId: getPublicProduct
+      tags:
+      - public
+      summary: Producto activo
+      description: El inactivo responde 404.
+      x-authorization:
+        kind: permission
+        permission: products:read
+      responses:
+        '200':
+          description: Producto activo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/catalog/me/offers:
+    get:
+      operationId: listMyOffers
+      tags:
+      - public
+      summary: Ofertas propias vigentes
+      description: No concede si el contexto no es verificable.
+      x-authorization:
+        kind: permission
+        permission: offers:read:own
+      responses:
+        '200':
+          description: Ofertas propias vigentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/catalog/me/offers/{id}:
+    get:
+      operationId: getMyOffer
+      tags:
+      - public
+      summary: Oferta propia
+      description: 404 si no es elegible.
+      x-authorization:
+        kind: permission
+        permission: offers:read:own
+      responses:
+        '200':
+          description: Oferta propia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Offer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/catalog/customers/{customerId}/offers:
+    get:
+      operationId: listCustomerOffers
+      tags:
+      - public
+      summary: Ofertas de un cliente
+      description: Ningún rol inicial tiene este permiso.
+      x-authorization:
+        kind: permission
+        permission: offers:read:any
+      responses:
+        '200':
+          description: Ofertas de un cliente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+  /api/v1/catalog/admin/categories:
+    get:
+      operationId: listAdminCategories
+      tags:
+      - admin
+      summary: Lista admin de categories
+      description: Incluye borradores. Eliminados solo con permiso adicional.
+      x-authorization:
+        kind: permission
+        permission: categories:read
+      responses:
+        '200':
+          description: Lista admin de categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: includeDeleted
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Solo los literales true o false. false no es true. Sin el permiso
+          de eliminados responde 403.
+    post:
+      operationId: createCategory
+      tags:
+      - admin
+      summary: Crea category
+      description: Allowlist del recurso.
+      x-authorization:
+        kind: permission
+        permission: categories:create
+      responses:
+        '201':
+          description: Crea category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+  /api/v1/catalog/admin/categories/{id}:
+    get:
+      operationId: getAdminCategory
+      tags:
+      - admin
+      summary: Detalle admin de category
+      description: Detalle administrativo.
+      x-authorization:
+        kind: permission
+        permission: categories:read
+      responses:
+        '200':
+          description: Detalle admin de category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateCategory
+      tags:
+      - admin
+      summary: Actualiza category
+      description: No reactiva ofertas al restaurar un producto.
+      x-authorization:
+        kind: permission
+        permission: categories:update
+      responses:
+        '200':
+          description: Actualiza category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+    delete:
+      operationId: deleteCategory
+      tags:
+      - admin
+      summary: Borra category
+      description: Borrado lógico.
+      x-authorization:
+        kind: permission
+        permission: categories:delete
+      responses:
+        '204':
+          description: Borra category
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/catalog/admin/categories/{id}/restore:
+    post:
+      operationId: restoreCategory
+      tags:
+      - admin
+      summary: Restaura category
+      description: Restaurar producto no reactiva ofertas previas.
+      x-authorization:
+        kind: permission
+        permission: categories:restore
+      responses:
+        '200':
+          description: Restaura category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/catalog/admin/products:
+    get:
+      operationId: listAdminProducts
+      tags:
+      - admin
+      summary: Lista admin de products
+      description: Incluye borradores. Eliminados solo con permiso adicional.
+      x-authorization:
+        kind: permission
+        permission: products:manage:read
+      responses:
+        '200':
+          description: Lista admin de products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductAdminPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: includeDeleted
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Solo los literales true o false. false no es true. Sin el permiso
+          de eliminados responde 403.
+    post:
+      operationId: createProduct
+      tags:
+      - admin
+      summary: Crea product
+      description: Allowlist del recurso.
+      x-authorization:
+        kind: permission
+        permission: products:create
+      responses:
+        '201':
+          description: Crea product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductWrite'
+  /api/v1/catalog/admin/products/{id}:
+    get:
+      operationId: getAdminProduct
+      tags:
+      - admin
+      summary: Detalle admin de product
+      description: Detalle administrativo.
+      x-authorization:
+        kind: permission
+        permission: products:manage:read
+      responses:
+        '200':
+          description: Detalle admin de product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateProduct
+      tags:
+      - admin
+      summary: Actualiza product
+      description: No reactiva ofertas al restaurar un producto.
+      x-authorization:
+        kind: permission
+        permission: products:update
+      responses:
+        '200':
+          description: Actualiza product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductWrite'
+    delete:
+      operationId: deleteProduct
+      tags:
+      - admin
+      summary: Borra product
+      description: Borrado lógico.
+      x-authorization:
+        kind: permission
+        permission: products:delete
+      responses:
+        '204':
+          description: Borra product
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/catalog/admin/products/{id}/restore:
+    post:
+      operationId: restoreProduct
+      tags:
+      - admin
+      summary: Restaura product
+      description: Restaurar producto no reactiva ofertas previas.
+      x-authorization:
+        kind: permission
+        permission: products:restore
+      responses:
+        '200':
+          description: Restaura product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/catalog/admin/offers:
+    get:
+      operationId: listAdminOffers
+      tags:
+      - admin
+      summary: Lista admin de offers
+      description: Incluye borradores. Eliminados solo con permiso adicional.
+      x-authorization:
+        kind: permission
+        permission: offers:read
+      responses:
+        '200':
+          description: Lista admin de offers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferAdminPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+      - name: includeDeleted
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Solo los literales true o false. false no es true. Sin el permiso
+          de eliminados responde 403.
+    post:
+      operationId: createOffer
+      tags:
+      - admin
+      summary: Crea offer
+      description: Allowlist del recurso.
+      x-authorization:
+        kind: permission
+        permission: offers:create
+      responses:
+        '201':
+          description: Crea offer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferWrite'
+  /api/v1/catalog/admin/offers/{id}:
+    get:
+      operationId: getAdminOffer
+      tags:
+      - admin
+      summary: Detalle admin de offer
+      description: Detalle administrativo.
+      x-authorization:
+        kind: permission
+        permission: offers:read
+      responses:
+        '200':
+          description: Detalle admin de offer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateOffer
+      tags:
+      - admin
+      summary: Actualiza offer
+      description: No reactiva ofertas al restaurar un producto.
+      x-authorization:
+        kind: permission
+        permission: offers:update
+      responses:
+        '200':
+          description: Actualiza offer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferWrite'
+    delete:
+      operationId: deleteOffer
+      tags:
+      - admin
+      summary: Borra offer
+      description: Borrado lógico.
+      x-authorization:
+        kind: permission
+        permission: offers:delete
+      responses:
+        '204':
+          description: Borra offer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/catalog/admin/offers/{id}/restore:
+    post:
+      operationId: restoreOffer
+      tags:
+      - admin
+      summary: Restaura offer
+      description: Restaurar producto no reactiva ofertas previas.
+      x-authorization:
+        kind: permission
+        permission: offers:restore
+      responses:
+        '200':
+          description: Restaura offer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empty'
+  /api/v1/catalog/admin/offers/{id}/eligibility-rules:
+    put:
+      operationId: replaceEligibilityRules
+      tags:
+      - admin
+      summary: Reemplaza reglas
+      description: Conjunción de campos y operadores compilados. Sin expresiones libres.
+      x-authorization:
+        kind: permission
+        permission: offers:rules:manage
+      responses:
+        '200':
+          description: Reemplaza reglas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferAdmin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EligibilityRules'
+  /api/v1/catalog/admin/offers/{id}/assignments:
+    get:
+      operationId: listAssignments
+      tags:
+      - admin
+      summary: Lista asignaciones
+      description: Paginada.
+      x-authorization:
+        kind: permission
+        permission: offers:assignments:read
+      responses:
+        '200':
+          description: Lista asignaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferAssignmentPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: La página fuera de rango devuelve items vacío.
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Máximo 100.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - -createdAt
+        description: Allowlist. El desempate estable es el id.
+    post:
+      operationId: createAssignment
+      tags:
+      - admin
+      summary: Asigna una oferta
+      description: Asignación directa.
+      x-authorization:
+        kind: permission
+        permission: offers:assign
+      responses:
+        '201':
+          description: Asigna una oferta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferAssignment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferAssignmentCreate'
+  /api/v1/catalog/admin/offers/{id}/assignments/{assignmentId}:
+    delete:
+      operationId: deleteAssignment
+      tags:
+      - admin
+      summary: Retira una asignación
+      description: Comparte offers:assign con el alta, según el contrato.
+      x-authorization:
+        kind: permission
+        permission: offers:assign
+      responses:
+        '204':
+          description: Retira una asignación
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: portal_session
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - correlationId
+      properties:
+        code:
+          type: string
+          enum:
+          - SESSION_INVALID
+          - PERMISSION_DENIED
+          - RESOURCE_NOT_VISIBLE
+          - CONFLICT
+          - IDEMPOTENCY_CONFLICT
+          - VALIDATION_ERROR
+          - BUSINESS_RULE
+          - RATE_LIMITED
+          - DEPENDENCY_UNAVAILABLE
+          - CSRF_INVALID
+          - RECENT_VERIFICATION_REQUIRED
+          - RECOVERY_POLICY_DISABLED
+          - CHALLENGE_INVALID
+        message:
+          type: string
+          maxLength: 300
+        correlationId:
+          type: string
+          format: uuid
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - code
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+    Empty:
+      type: object
+      additionalProperties: false
+      required: []
+      properties: {}
+    Category:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - name
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+        status:
+          enum:
+          - active
+          - disabled
+    CategoryPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    CategoryWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 500
+        status:
+          enum:
+          - active
+          - disabled
+    Product:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - name
+      - currency
+      properties:
+        id:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        summary:
+          type: string
+        description:
+          type: string
+        currency:
+          const: MXN
+        termsVersion:
+          type: integer
+        termsText:
+          type: string
+    ProductPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    ProductAdmin:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - name
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        summary:
+          type: string
+        description:
+          type: string
+        currency:
+          const: MXN
+        termsVersion:
+          type: integer
+        termsText:
+          type: string
+        status:
+          enum:
+          - draft
+          - active
+          - disabled
+        conditions:
+          $ref: '#/components/schemas/ProductConditions'
+    ProductAdminPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductAdmin'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    ProductWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - categoryId
+      - code
+      - name
+      - currency
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        summary:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+          maxLength: 4000
+        currency:
+          const: MXN
+        termsText:
+          type: string
+          maxLength: 8000
+        status:
+          enum:
+          - draft
+          - active
+          - disabled
+        conditions:
+          $ref: '#/components/schemas/ProductConditions'
+    ProductConditions:
+      type: object
+      additionalProperties: false
+      required:
+      - schemaVersion
+      - attributes
+      properties:
+        schemaVersion:
+          type: integer
+          minimum: 1
+        attributes:
+          type: object
+          maxProperties: 30
+          additionalProperties:
+            type:
+            - string
+            - number
+            - boolean
+          description: El servidor solo acepta claves del esquema compilado para esa
+            categoría y versión.
+    Offer:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+        benefitType:
+          type: string
+        benefitValue:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        eligible:
+          type: boolean
+        status:
+          const: active
+    OfferPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Offer'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    OfferAdmin:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - title
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+        benefitType:
+          enum:
+          - information
+        benefitValue:
+          type: string
+          maxLength: 200
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        priority:
+          type: integer
+        audienceType:
+          enum:
+          - general
+          - rules
+          - direct
+        status:
+          enum:
+          - draft
+          - active
+          - disabled
+    OfferAdminPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferAdmin'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    OfferWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - productId
+      - code
+      - title
+      - audienceType
+      properties:
+        productId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 4000
+        benefitType:
+          const: information
+        benefitValue:
+          type: string
+          maxLength: 200
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        audienceType:
+          enum:
+          - general
+          - rules
+          - direct
+        status:
+          enum:
+          - draft
+          - active
+          - disabled
+    EligibilityRules:
+      type: object
+      additionalProperties: false
+      required:
+      - rules
+      properties:
+        rules:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - operator
+            - value
+            properties:
+              field:
+                enum:
+                - totalBalance
+                - accountAgeDays
+              operator:
+                enum:
+                - eq
+                - gte
+                - lte
+              value:
+                type: string
+                maxLength: 40
+    OfferAssignment:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - offerId
+      - customerId
+      properties:
+        id:
+          type: string
+          format: uuid
+        offerId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+    OfferAssignmentPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - totalItems
+      - totalPages
+      - page
+      - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferAssignment'
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+    OfferAssignmentCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - customerId
+      - reason
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+  responses:
+    Unauthorized:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: Error uniforme
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -1,0 +1,12 @@
+**/.git
+**/node_modules
+**/dist
+**/coverage
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/htmlcov
+**/.env
+playwright-report
+test-results
+agent-transcripts

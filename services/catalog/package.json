@@ -1,0 +1,68 @@
+{
+  "name": "@portal/catalog",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage --runInBand"
+  },
+  "dependencies": {
+    "@nestjs/common": "12.2.0",
+    "@nestjs/core": "12.2.0",
+    "@nestjs/platform-express": "12.2.0",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.6.7",
+    "@nestjs/typeorm": "12.0.2",
+    "pg": "8.23.1",
+    "typeorm": "1.1.2",
+    "amqplib": "2.2.0",
+    "jose": "6.2.13"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "12.2.0",
+    "@types/amqplib": "0.10.8",
+    "@types/express": "5.0.6",
+    "@types/jest": "30.0.0",
+    "@types/node": "24.19.2",
+    "jest": "30.5.2",
+    "ts-jest": "29.4.15",
+    "typescript": "6.0.3",
+    "@types/pg": "8.23.1"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/*.spec.ts"
+    ],
+    "collectCoverageFrom": [
+      "src/domain/**/*.ts",
+      "src/application/**/*.ts",
+      "src/infrastructure/logging/**/*.ts",
+      "src/infrastructure/config/**/*.ts",
+      "src/infrastructure/probes/*.probe.ts",
+      "src/infrastructure/http/catalog-handler.ts",
+      "src/infrastructure/http/service-clients.ts",
+      "src/presentation/**/*.ts"
+    ],
+    "coveragePathIgnorePatterns": [
+      "\\\\.spec\\\\.ts$",
+      "application/testing/"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    },
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ]
+  }
+}

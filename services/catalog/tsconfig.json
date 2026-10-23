@@ -1,0 +1,9 @@
+{
+  "extends": "../../packages/ts-config/nest.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "exclude": ["**/*.spec.ts"]
+}

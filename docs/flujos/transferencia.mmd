@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant Usuario
+  participant Web
+  participant Cuentas
+  participant Acceso
+
+  Usuario->>Web: Origen, destino, importe y concepto
+  Web->>Cuentas: POST /transfer-proposals
+  Cuentas->>Acceso: Authorize transfers:create:own
+  Cuentas-->>Web: Propuesta inmutable sin reservar fondos
+  Usuario->>Web: Confirma valores exactos
+  Web->>Cuentas: POST confirm con Idempotency-Key
+  Cuentas->>Acceso: Authorize y verificacion reciente
+  Cuentas->>Cuentas: Bloqueos, saldo, limites y una transaccion
+  Cuentas-->>Web: Transferencia confirmada o rechazo sin movimientos
+  Note over Web: El texto del chat no confirma ni ejecuta
